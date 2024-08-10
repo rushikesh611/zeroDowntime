@@ -1,0 +1,28 @@
+{
+  "name": "zero-downtime",
+  "version": "1.0.0",
+  "description": "Backend",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rushikesh611/zeroDowntime.git"
+  },
+  "author": "rushi611@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rushikesh611/zeroDowntime/issues"
+  },
+  "homepage": "https://github.com/rushikesh611/zeroDowntime#readme",
+  "devDependencies": {
+    "@tsconfig/node20": "^20.1.4",
+    "@types/node": "^22.2.0",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
+  }
+}
