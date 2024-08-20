@@ -1,5 +1,12 @@
-function sayHello(name: string){
-  console.log(`Hello ${name}`);
-}
+const express = require('express')
 
-sayHello("Hrushikesh");
+const app = express()
+const PORT = 3000
+
+app.get('/', (req: any, res: any) => {
+  res.send('Zero Downtime')
+})
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}/`)
+})
