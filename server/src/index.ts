@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client'
 
 import authRoutes from './routes/auth'
 import testAuthRoutes from './routes/testAuth'
+import monitorRoutes  from './routes/monitors'
 
 dotenv.config()
 
@@ -28,6 +29,7 @@ app.use(passport.session());
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api', testAuthRoutes)
+app.use('/api/monitors', monitorRoutes)
 
 app.get('/', (req: any, res: any) => {
   res.send('Zero Downtime')
