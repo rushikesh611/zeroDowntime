@@ -2,6 +2,8 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import auth from '../middleware/auth';
 
+import { checkWebsiteUptime } from '../services/uptimeService';
+
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -63,5 +65,22 @@ router.delete('/:id', auth, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 })
+
+router.post('/:id/check', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const monitor = await prisma.monitor.findUnique({
+            where: { id, userId: req.user!.id }
+        });
+        if (!monitor) {
+            return res.status(404).json({ error: 'Monitor not found' });
+        }
+        const uptimeResults = await checkWebsiteUptime(monitor.url);
+        res.json(uptimeResults);
+    } catch (error) {
+        console.error('Error checking uptime:', error);
+        res.status(500).json({ error: 'Error checking uptime' });
+    }
+});
 
 export default router;
