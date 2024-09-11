@@ -33,3 +33,14 @@ model Monitor {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model MonitorLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  monitorId String   @db.ObjectId
+  isUp    Boolean
+  statusCode Int
+  responseTime Int
+  region String
+  lastCheckedAt DateTime @default(now())
+}
+

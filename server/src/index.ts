@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client'
 import authRoutes from './routes/auth'
 import testAuthRoutes from './routes/testAuth'
 import monitorRoutes  from './routes/monitors'
+import { startUptimeCheck } from './jobs/uptimeCheck'
 
 dotenv.config()
 
@@ -34,6 +35,9 @@ app.use('/api/monitors', monitorRoutes)
 app.get('/', (req: any, res: any) => {
   res.send('Zero Downtime')
 })
+
+startUptimeCheck()
+console.log('Uptime check job started')
 
 
 // Start the server
