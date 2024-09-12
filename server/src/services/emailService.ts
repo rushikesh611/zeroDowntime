@@ -1,32 +1,24 @@
-import AWS from 'aws-sdk'
+import { Resend } from 'resend'
 
-const ses = new AWS.SES({ region: 'eu-west-1' })
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// TODO: Implement verifyEmailIdentity check for ses as it requires a verified email address to send emails
-
-export async function sendAlert(emails: string[], url: string, results: any[]){
+export async function sendAlert(emails: string[], url: string, results: any[]) {
     const emailSource = process.env.EMAIL_SOURCE || '';
-    const params = {
-        Destination: {
-            ToAddresses: emails
-        },
-        Message: {
-            Body:{
-                Text: {
-                    Data: `The website ${url} is down. Results: ${JSON.stringify(results)}`
-                }
-            },
-            Subject: {
-                Data: `Alert: ${url} is down`
-            }
-        },
-        Source: emailSource
-    }
 
     try {
-        await ses.sendEmail(params).promise();
-        console.log(`Alert sent to ${emails.join(', ')}`);
-      } catch (error) {
-        console.error('Error sending email:', error);
-      }
+        const { data, error } = await resend.emails.send({
+            from: emailSource,
+            to: emails,
+            subject: `🚨Alert: ${url} is down`,
+            text: `The website ${url} is down. Results: ${JSON.stringify(results)}`
+        })
+
+        if (error) {
+            console.error('Error sending email alert:', error);
+        } else {
+            console.log(`Alert sent to ${emails.join(', ')}. Message ID: ${data?.id}`);
+        }
+    } catch (error) {
+        console.error('Error sending email alert:', error);
+    }
 }
