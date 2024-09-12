@@ -1,6 +1,7 @@
 import cron from 'node-cron'
 import { PrismaClient } from '@prisma/client'
 import { checkWebsiteUptime } from '../services/uptimeService'
+import { sendAlert } from '../services/emailService'
 
 const prisma = new PrismaClient()
 
@@ -23,6 +24,7 @@ export function startUptimeCheck() {
                 if (isDown) {
                     console.log(`Website ${monitor.url} is down`)
                     // TODO: send email alert
+                    await sendAlert(monitor.emails, monitor.url, results)
                 } else {
                     console.log(`Website ${monitor.url} is up`)
                 }
