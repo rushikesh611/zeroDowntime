@@ -8,6 +8,7 @@ import { checkWebsiteUptime } from '../services/uptimeService';
 const prisma = new PrismaClient();
 const router = express.Router();
 
+// Create monitor
 router.post('/', auth, async (req, res) => {
     try {
         const { url, emails, frequency } = req.body;
@@ -26,6 +27,7 @@ router.post('/', auth, async (req, res) => {
     }
 })
 
+// Get all monitors
 router.get('/', auth, async (req, res) => {
     try {
         const monitors = await prisma.monitor.findMany({
@@ -38,6 +40,7 @@ router.get('/', auth, async (req, res) => {
     }
 })
 
+// Update monitor
 router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -53,6 +56,7 @@ router.put('/:id', auth, async (req, res) => {
     }
 })
 
+// Delete monitor
 router.delete('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -66,6 +70,7 @@ router.delete('/:id', auth, async (req, res) => {
     }
 })
 
+// Manually check monitor uptime
 router.post('/:id/check', auth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -80,6 +85,21 @@ router.post('/:id/check', auth, async (req, res) => {
     } catch (error) {
         console.error('Error checking uptime:', error);
         res.status(500).json({ error: 'Error checking uptime' });
+    }
+});
+
+// Get monitor logs
+router.get('/:id/logs', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const logs = await prisma.monitorLog.findMany({
+            where: { monitorId: id },
+            orderBy: { lastCheckedAt: 'desc' }
+        });
+        res.json(logs);
+    } catch (error) {
+        console.log('Error getting monitor logs', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

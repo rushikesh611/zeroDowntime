@@ -1,67 +1,78 @@
 import cron from 'node-cron'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Monitor, MonitorLog } from '@prisma/client'
 import { checkWebsiteUptime } from '../services/uptimeService'
 import { sendAlert } from '../services/emailService'
 
 const prisma = new PrismaClient()
 
-// Cache to store details for each monitor by monitorId
-const cache: { [key: string]: { results: any[], lastCheckedAt: Date } } = {}
+interface UptimeResult {
+    region: string;
+    statusCode: number;
+    responseTime: number;
+    isUp: boolean;
+}
+
+interface CachedResult {
+    time: Date;
+    isDown: boolean;
+    results: UptimeResult[];
+}
+
+interface MonitorCache {
+    results: CachedResult[];
+    lastCheckedAt: Date;
+}
+
+const cache: { [key: string]: MonitorCache } = {}
 
 export function startUptimeCheck() {
     cron.schedule('*/30 * * * * *', async () => {
-        const monitors = await prisma.monitor.findMany({ where: { status: 'RUNNING' } })
+        const currentTime = new Date()
+        const monitors = await prisma.monitor.findMany({ 
+            where: { status: 'RUNNING' }
+        })
 
-        for (const monitor of monitors) {
-            const currentTime = new Date()
+        await Promise.all(monitors.map(async (monitor: Monitor) => {
             const lastCheckedAt = cache[monitor.id]?.lastCheckedAt || new Date(0)
 
-            // Note: frequency is in milliseconds
-            if (Number(currentTime) - Number(lastCheckedAt) >= monitor.frequency) {
+            if (currentTime.getTime() - lastCheckedAt.getTime() >= monitor.frequency * 1000) {
                 const results = await checkWebsiteUptime(monitor.url)
                 const isDown = results.some(result => !result.isUp)
 
                 if (isDown) {
                     console.log(`Website ${monitor.url} is down`)
-                    // TODO: send email alert
                     await sendAlert(monitor.emails, monitor.url, results)
                 } else {
-                    console.log(`Website ${monitor.url} is up`)
+                    console.log(`Website ${monitor.url} is up. Timestamp: ${currentTime}`)
                 }
 
-                // Initialize cache if it doesn't exist for this monitor
+                // Initialize or update cache
                 if (!cache[monitor.id]) {
                     cache[monitor.id] = { results: [], lastCheckedAt: currentTime }
                 }
-
-                // Push the current check results into the cache
                 cache[monitor.id].results.push({ time: currentTime, isDown, results })
-
-                // Update lastCheckedAt in the cache
                 cache[monitor.id].lastCheckedAt = currentTime
 
-                // Check if there are 10 records in the cache
+                // Batch insert if cache has 10 or more records
                 if (cache[monitor.id].results.length >= 10) {
+                    const logData: Omit<MonitorLog, 'id'>[] = cache[monitor.id].results.flatMap(record => 
+                        record.results.map(result => ({
+                            monitorId: monitor.id,
+                            isUp: !record.isDown,
+                            statusCode: result.statusCode,
+                            responseTime: result.responseTime,
+                            region: result.region,
+                            lastCheckedAt: record.time
+                        }))
+                    )
 
-                    // Insert the 10 records into the database
-                    for (const record of cache[monitor.id].results) {
-                        for (const result of record.results) {
-                            await prisma.monitorLog.create({
-                                data: {
-                                    monitorId: monitor.id,
-                                    region: result.region,
-                                    statusCode: result.statusCode,
-                                    responseTime: result.responseTime,
-                                    isUp: result.isUp,
-                                }
-                            })
-                        }
-                    }
+                    await prisma.monitorLog.createMany({
+                        data: logData
+                    })
 
-                    // Clear the cached results for this monitor
                     cache[monitor.id].results = []
                 }
             }
-        }
+        }))
     })
 }
