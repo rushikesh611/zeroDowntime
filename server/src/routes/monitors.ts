@@ -40,6 +40,23 @@ router.get('/', auth, async (req, res) => {
     }
 })
 
+// Get single monitor
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const monitor = await prisma.monitor.findUnique({
+            where: { id, userId: req.user?.id }
+        });
+        if (!monitor) {
+            return res.status(404).json({ error: 'Monitor not found' });
+        }
+        res.json(monitor);
+    } catch (error) {
+        console.log('Error getting monitor', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+})
+
 // Update monitor
 router.put('/:id', auth, async (req, res) => {
     try {
