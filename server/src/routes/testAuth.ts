@@ -1,13 +1,14 @@
-import express from 'express'
-import auth from '../middleware/auth'
+import express from 'express';
+import auth from '../middleware/auth';
 
-const router = express.Router()
+const router = express.Router();
 
 router.get('/test-auth', auth, async (req, res) => {
-    if(!req.user) {
+    if (!req.user) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
+    // Return the authenticated user's information
     res.json({ user: req.user });
-})
+});
 
 export default router;
