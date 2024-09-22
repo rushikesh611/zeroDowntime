@@ -12,12 +12,18 @@ import { startUptimeCheck } from './jobs/uptimeCheck'
 
 dotenv.config()
 
-const app = express()
+export const app = express()
 const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient()
 
+const corsOptions = {
+  origin:'http://localhost:3000', 
+    credentials:true,           
+    optionSuccessStatus:200
+}
+  
 // Middleware
-app.use(cors())
+app.use(cors(corsOptions));
 app.use(express.json())
 app.use(session({
   secret: process.env.SESSION_SECRET || '32665854d225bef27db95842688a526',
