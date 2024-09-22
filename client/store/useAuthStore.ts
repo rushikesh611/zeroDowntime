@@ -9,50 +9,55 @@ interface User {
 
 interface AuthStore {
     user: User | null
-    token: string | null
     isLoading: boolean
     login: () => void
     logout: () => Promise<void>
     checkAuth: () => Promise<void>
-    setToken: (token: string) => void
 }
 
 export const useAuthStore = create<AuthStore>()(
     persist(
         (set) => ({
             user: null,
-            token: null,
             isLoading: true,
             login: () => {
                 window.location.href = 'http://localhost:3001/api/auth/github'
             },
             logout: async () => {
-                await fetch('http://localhost:3001/api/auth/logout', { method: 'POST', credentials: 'include' })
-                set({ user: null, token: null })
-                window.location.href = '/'
+                // Call backend to clear the token (cookie)
+                await fetch('http://localhost:3001/api/auth/logout', {
+                    method: 'GET',
+                    credentials: 'include', // Ensures the cookie is sent with the request
+                });
+
+                // Clear the user data in Zustand state
+                set({ user: null });
+
+                // Redirect to home page after logout
+                window.location.href = '/';
             },
             checkAuth: async () => {
                 try {
                     const res = await fetch('http://localhost:3001/api/test-auth', {
-                        headers: {
-                            'Authorization': `Bearer ${useAuthStore.getState().token}`
-                        }
-                    })
+                        method: 'GET',
+                        credentials: 'include', // Send cookies with the request
+                    });
                     if (res.ok) {
-                        const user = await res.json()
-                        set({ user, isLoading: false })
+                        // If authenticated, get the user data from the response
+                        const user = await res.json();
+                        set({ user, isLoading: false });
                     } else {
-                        set({ user: null, token: null, isLoading: false })
+                        // If not authenticated, clear the user state
+                        set({ user: null, isLoading: false });
                     }
                 } catch (error) {
-                    set({ user: null, token: null, isLoading: false })
+                    set({ user: null, isLoading: false });
                 }
             },
-            setToken: (token: string) => set({ token })
         }),
         {
-            name: 'auth-storage',
-            partialize: (state) => ({ token: state.token }),
+            name: 'auth-storage', // Optional: You can persist user data in localStorage if needed
+            partialize: (state) => ({ user: state.user }), // Persist only the user state (if required)
         }
     )
 )

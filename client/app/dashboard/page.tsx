@@ -14,7 +14,7 @@ export default function Dashboard() {
             window.location.href = '/'
         }
     }, [])
-    
+
     return (
         <div>
             <h1>Dashboard</h1>
