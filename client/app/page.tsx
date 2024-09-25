@@ -7,6 +7,7 @@ import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import { useAuthStore } from '@/store/useAuthStore'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Spinner } from "@/components/spinner";
 
 export default function Home() {
   const { login, user, checkAuth, isLoading } = useAuthStore()
@@ -23,7 +24,11 @@ export default function Home() {
   }, [user, isLoading, router])
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner/>
+      </div>
+    );
   }
 
   return (
