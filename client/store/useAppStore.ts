@@ -7,17 +7,22 @@ interface User {
     email: string;
 }
 
-interface AuthStore {
+interface AppStore {
+    // auth state
     user: User | null
     isLoading: boolean
     login: () => void
     logout: () => Promise<void>
     checkAuth: () => Promise<void>
+
+    // sidebar state
+    isSidebarOpen: boolean
+    toggleSidebar: () => void
 }
 
-export const useAuthStore = create<AuthStore>()(
+export const useAppStore = create<AppStore>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             user: null,
             isLoading: true,
             login: () => {
@@ -54,10 +59,12 @@ export const useAuthStore = create<AuthStore>()(
                     set({ user: null, isLoading: false });
                 }
             },
+            isSidebarOpen: true,
+            toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
         }),
         {
-            name: 'auth-storage', // Optional: You can persist user data in localStorage if needed
-            partialize: (state) => ({ user: state.user }), // Persist only the user state (if required)
+            name: 'app-storage', // Optional: You can persist user data in localStorage if needed
+            partialize: (state) => ({ user: state.user, isSidebarOpen: state.isSidebarOpen }), // Persist only the user state (if required)
         }
     )
 )
