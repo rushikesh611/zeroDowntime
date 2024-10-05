@@ -1,7 +1,7 @@
 import { ContentLayout } from "@/components/dashboard/content-layout";
 import PlaceholderContent from "@/components/placeholder-content";
 
-export default function MonitorsPage() {
+const MonitorsPage = () =>{
   return (
     <ContentLayout title="Monitors">
       <h1>Hello, Hrushikesh</h1>
@@ -9,3 +9,5 @@ export default function MonitorsPage() {
     </ContentLayout>
   );
 }
+
+export default MonitorsPage;
