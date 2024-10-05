@@ -41,7 +41,7 @@ export default function Home() {
     }
   }, [user, isLoading, isPageLoading, router]);
 
-  if (isPageLoading) {
+  if (isPageLoading || (user && !isLoading)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Spinner />

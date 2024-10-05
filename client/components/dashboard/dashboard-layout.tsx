@@ -4,15 +4,28 @@ import { Footer } from "@/components/dashboard/footer";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
+import { useEffect, useState } from "react";
 
 export default function DashboardLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const sidebar = useAppStore((state) => state);
 
   if (!sidebar) return null;
+
+  useEffect(() => {
+    const user = useAppStore.getState().user;
+    if (!user) {
+      window.location.href = '/';
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  if (!sidebar || !isAuthenticated) return null;
 
   return (
     <>
