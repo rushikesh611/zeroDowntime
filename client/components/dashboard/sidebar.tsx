@@ -29,7 +29,7 @@ export function Sidebar() {
                     variant="link"
                     asChild
                 >
-                    <Link href="/dashboard" className="flex items-center gap-2">
+                    <Link href="/monitors" className="flex items-center gap-2 hover:no-underline">
                         <Zap className="w-6 h-6 mr-1" />
                         <h1
                             className={cn(

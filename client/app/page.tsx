@@ -39,7 +39,7 @@ export default function Home() {
     if (user && !isLoading && !isPageLoading) {
       router.push('/monitors');
     }
-  }, [user, isLoading, isPageLoading, router]);
+  }, [user, isLoading, isPageLoading]);
 
   if (isPageLoading || (user && !isLoading)) {
     return (
@@ -51,18 +51,17 @@ export default function Home() {
 
   return (
     <main className="relative w-full min-h-screen overflow-hidden">
-      <BackgroundBeams className="absolute inset-0 -z-10" />
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <h1 className="font-bold text-4xl sm:text-5xl md:text-6xl text-center mb-4">
           ZeroDowntime
         </h1>
-        <Button 
+        <Button
           className="w-full max-w-xs mt-4 flex items-center justify-center"
           onClick={login}
           disabled={isLoading}
         >
           {isLoading ? (
-            <Spinner/>
+            <Spinner />
           ) : (
             <GitHubLogoIcon className="mr-2" width={20} height={20} />
           )}

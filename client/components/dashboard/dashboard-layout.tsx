@@ -20,10 +20,12 @@ export default function DashboardLayout({
     const user = useAppStore.getState().user;
     if (!user) {
       window.location.href = '/';
+      console.log(user)
+      console.log(isAuthenticated)
     } else {
       setIsAuthenticated(true);
     }
-  }, []);
+  });
 
   if (!sidebar || !isAuthenticated) return null;
 
