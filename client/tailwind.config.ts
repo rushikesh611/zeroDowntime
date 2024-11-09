@@ -13,6 +13,20 @@ const config: Config = {
 	],
 	theme: {
 		extend: {
+			animation: {
+				growAndFade: 'growAndFade 3s infinite ease-out',
+				pulsePause: 'pulsePause 1.5s infinite ease-in-out',
+			},
+			keyframes: {
+				growAndFade: {
+					'0%': { opacity: '0.25', transform: 'scale(0)' },
+					'100%': { opacity: '0', transform: 'scale(1)' },
+				},
+				pulsePause: {
+					'0%, 100%': { transform: 'scaleY(1)', opacity: '0.8' },
+					'50%': { transform: 'scaleY(1.1)', opacity: '0.5' },
+				  },
+			},
 			colors: {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
@@ -62,7 +76,7 @@ const config: Config = {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate"), addVariablesForColors], 
+	plugins: [require("tailwindcss-animate"), addVariablesForColors],
 };
 export default config;
 

@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface User {
+type User = {
+  id: string;
   githubId: string;
   username: string;
   email: string;
+  avatarUrl: string;
 }
 
 interface AppStore {
@@ -49,8 +51,8 @@ export const useAppStore = create<AppStore>()(
           });
           if (res.ok) {
             // If authenticated, get the user data from the response
-            const user = await res.json();
-            set({ user, isLoading: false });
+            const data = await res.json();
+            set({ user: data.user, isLoading: false });
           } else if (res.status === 401) {
             // If not authenticated, clear the user state
             set({ user: null, isLoading: false });
@@ -63,8 +65,8 @@ export const useAppStore = create<AppStore>()(
       toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
     }),
     {
-      name: 'app-storage', 
-      partialize: (state) => ({ user: state.user, isSidebarOpen: state.isSidebarOpen }), 
+      name: 'app-storage',
+      partialize: (state) => ({ user: state.user, isSidebarOpen: state.isSidebarOpen }),
     }
   )
 );
