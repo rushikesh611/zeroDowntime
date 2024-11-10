@@ -120,4 +120,58 @@ router.get('/:id/logs', auth, async (req, res) => {
     }
 });
 
+// get monitor logs by region
+router.get('/:id/logs/:region', auth, async (req, res) => {
+    try {
+        const { id, region } = req.params;
+        const logs = await prisma.monitorLog.findMany({
+            where: { monitorId: id, region },
+            orderBy: { lastCheckedAt: 'desc' }
+        });
+        res.json(logs);
+    } catch (error) {
+        console.log('Error getting monitor logs', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// get monitor logs for last 1 hour
+router.get('/:id/logs/hour', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(id);
+        const logs = await prisma.monitorLog.findMany({
+            where: { monitorId: id, lastCheckedAt: { gte: new Date(Date.now() - 3600000) } },
+            orderBy: { lastCheckedAt: 'desc' }
+        });
+        console.log(logs);  
+        res.json(logs);
+    } catch (error) {
+        console.log('Error getting monitor logs', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// get monitor logs for last 24 hours
+router.get('/:id/logs/day', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const twentyFourHoursAgo = new Date(Date.now() - 86400000).toISOString();
+        console.log('Monitor ID:', id);
+        console.log('Twenty-four hours ago:', twentyFourHoursAgo);
+
+        const logs = await prisma.monitorLog.findMany({
+            where: { monitorId: id, lastCheckedAt: { gte: twentyFourHoursAgo } },
+            orderBy: { lastCheckedAt: 'desc' }
+        });
+
+        console.log('Logs:', logs);
+        res.json(logs);
+    } catch (error) {
+        console.log('Error getting monitor logs', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;
+

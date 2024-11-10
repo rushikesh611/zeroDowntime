@@ -162,7 +162,7 @@ export default function Home() {
                     ))}
                   </ul>
                   <p className="text-center font-bold mb-4">{plan.price}</p>
-                  <Button className="mt-auto">
+                  <Button className="mt-auto dark:bg-black dark:text-white">
                     Choose Plan
                   </Button>
                 </div>
