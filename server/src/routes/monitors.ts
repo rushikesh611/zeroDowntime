@@ -16,7 +16,7 @@ router.post('/', auth, async (req, res) => {
             data: {
                 url,
                 emails,
-                frequency: frequency || 300,
+                frequency: frequency || 600,
                 userId: req.user!.id
             }
         })
@@ -72,6 +72,7 @@ router.put('/:id', auth, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 })
+
 
 // Delete monitor
 router.delete('/:id', auth, async (req, res) => {

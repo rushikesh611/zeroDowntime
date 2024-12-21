@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 import { useEffect, useState } from "react";
+import { Toaster } from "../ui/toaster";
 
 export default function DashboardLayout({
   children
@@ -40,6 +41,7 @@ export default function DashboardLayout({
       >
         {children}
       </main>
+      <Toaster/>
       <footer
         className={cn(
           "transition-[margin-left] ease-in-out duration-300",

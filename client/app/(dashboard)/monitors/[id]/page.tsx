@@ -2,7 +2,7 @@
 
 import { ContentLayout } from '@/components/dashboard/content-layout';
 import { fetchWithAuth } from '@/lib/utils';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import Circles from '@/components/circles';
@@ -13,6 +13,7 @@ import RegionalResponseChart from '@/components/dashboard/regional-response-char
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PauseIcon, PlayIcon, SendHorizonalIcon, Settings, ShieldAlert } from 'lucide-react';
+import { useAppStore } from '@/store/useAppStore';
 
 
 type Monitor = {
@@ -42,24 +43,27 @@ const MonitorDetailsPage = () => {
   const { id } = useParams()
 
   const [monitor, setMonitor] = useState<Monitor | null>(null)
-  const [monitorLogs, setMonitorLogs] = useState<MonitorLog[]>([])
+  // const [monitorLogs, setMonitorLogs] = useState<MonitorLog[]>([])
 
+  const { pauseMonitor, startMonitor } = useAppStore()
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const monitorDetails = await fetchWithAuth('/api/monitors/' + id);
-        const monitorLogs = await fetchWithAuth('/api/monitors/' + id + '/logs');
+        // const monitorLogs = await fetchWithAuth('/api/monitors/' + id + '/logs');
         if (monitorDetails.ok) {
           const result = await monitorDetails.json();
 
           setMonitor(result);
         }
 
-        if (monitorLogs.ok) {
-          const result = await monitorLogs.json();
-          setMonitorLogs(result.flat());
-        }
+        // if (monitorLogs.ok) {
+        //   const result = await monitorLogs.json();
+        //   setMonitorLogs(result.flat());
+        // }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -69,6 +73,10 @@ const MonitorDetailsPage = () => {
   }, []);
 
 
+  const handleConfigure = (monitorId: string) => {
+    router.push(`/monitors/${monitorId}/update`);
+    console.log('Navigate to update monitor detail page with id:', monitorId);
+  }
 
   return (
     <ContentLayout title={`Monitor  >  ${monitor?.id}`}>
@@ -90,27 +98,26 @@ const MonitorDetailsPage = () => {
         <Button variant='ghost'><ShieldAlert className='mr-2 w-5 h-5' /> Incident</Button>
         <Button variant='ghost'>
           {monitor?.status === 'PAUSED' ? (
-            <div className="flex items-center">
+            <div className="flex items-center" onClick={() => startMonitor(monitor.id)}>
               <PlayIcon className='mr-2 w-5 h-5' />
               Start
             </div>
           ) : (
-
-            <div className="flex items-center">
+            <div className="flex items-center" onClick={() => pauseMonitor(monitor!.id)}>
               <PauseIcon className='mr-2 w-5 h-5' />
               Pause
             </div>
           )
           }
         </Button>
-        <Button variant='ghost'><Settings className='mr-2 w-5 h-5' /> Configure</Button>
+        <Button variant='ghost' onClick={() => monitor && handleConfigure(monitor.id)}><Settings className='mr-2 w-5 h-5' /> Configure</Button>
       </div>
 
       <div className='px-3 mb-8'>
-        <RegionalAvailabilityChart data={monitorLogs} />
+        {/* <RegionalAvailabilityChart data={monitorLogs} /> */}
       </div>
       <div className='px-3 mb-8'>
-        <RegionalResponseChart data={monitorLogs} />
+        {/* <RegionalResponseChart data={monitorLogs} /> */}
       </div>
 
       <div className='flex flex-row px-3'>

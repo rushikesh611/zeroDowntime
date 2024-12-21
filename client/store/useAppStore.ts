@@ -1,3 +1,5 @@
+import { Monitor } from '@/app/(dashboard)/monitors/page';
+import { fetchWithAuth } from '@/lib/utils';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -20,6 +22,12 @@ interface AppStore {
   // sidebar state
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
+
+  // monitors state
+  monitors: Monitor[];
+  fetchMonitors: () => Promise<void>
+  pauseMonitor: (monitorId: string) => Promise<void>
+  startMonitor: (monitorId: string) => Promise<void>
 }
 
 export const useAppStore = create<AppStore>()(
@@ -63,6 +71,64 @@ export const useAppStore = create<AppStore>()(
       },
       isSidebarOpen: true,
       toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+      // Monitors state
+      monitors: [],
+      fetchMonitors: async () => {
+        try {
+          const response = await fetchWithAuth('/api/monitors')
+          if (!response.ok) {
+            throw new Error('Failed to fetch monitors')
+          }
+          const data = await response.json()
+          set({ monitors: data })
+        } catch (error) {
+          console.error('Error fetching monitors:', error)
+        }
+      },
+      pauseMonitor: async (monitorId: string) => {
+        const data = { status: 'PAUSED' }
+        try {
+          const response = await fetchWithAuth(`/api/monitors/${monitorId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          })
+          if (!response.ok) {
+            throw new Error('Failed to pause monitor')
+          }
+          set((state) => ({
+            monitors: state.monitors.map((monitor) =>
+              monitor.id === monitorId ? { ...monitor, status: 'PAUSED' } : monitor
+            )
+          }))
+        } catch (error) {
+          console.error('Error pausing monitor:', error)
+        }
+      },
+      startMonitor: async (monitorId: string) => {
+        const data = { status: 'ACTIVE' }
+        try {
+          const response = await fetchWithAuth(`/api/monitors/${monitorId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          })
+          if (!response.ok) {
+            throw new Error('Failed to start monitor')
+          }
+          set((state) => ({
+            monitors: state.monitors.map((monitor) =>
+              monitor.id === monitorId ? { ...monitor, status: 'ACTIVE' } : monitor
+            )
+          }))
+        } catch (error) {
+          console.error('Error starting monitor:', error)
+        }
+      }
     }),
     {
       name: 'app-storage',
