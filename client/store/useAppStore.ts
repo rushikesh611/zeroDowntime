@@ -1,5 +1,5 @@
-import { Monitor } from '@/app/(dashboard)/monitors/page';
 import { fetchWithAuth } from '@/lib/utils';
+import { Monitor } from '@/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -28,6 +28,7 @@ interface AppStore {
   fetchMonitors: () => Promise<void>
   pauseMonitor: (monitorId: string) => Promise<void>
   startMonitor: (monitorId: string) => Promise<void>
+  fetchMonitorById: (monitorId: string) => Promise<Monitor | undefined>
 }
 
 export const useAppStore = create<AppStore>()(
@@ -108,7 +109,7 @@ export const useAppStore = create<AppStore>()(
         }
       },
       startMonitor: async (monitorId: string) => {
-        const data = { status: 'ACTIVE' }
+        const data = { status: 'RUNNING' }
         try {
           const response = await fetchWithAuth(`/api/monitors/${monitorId}`, {
             method: 'PUT',
@@ -117,16 +118,29 @@ export const useAppStore = create<AppStore>()(
             },
             body: JSON.stringify(data)
           })
+          console.log('response', response)
           if (!response.ok) {
             throw new Error('Failed to start monitor')
           }
           set((state) => ({
             monitors: state.monitors.map((monitor) =>
-              monitor.id === monitorId ? { ...monitor, status: 'ACTIVE' } : monitor
+              monitor.id === monitorId ? { ...monitor, status: 'RUNNING' } : monitor
             )
           }))
         } catch (error) {
           console.error('Error starting monitor:', error)
+        }
+      },
+      fetchMonitorById: async (monitorId: string) => {
+        try {
+          const response = await fetchWithAuth(`/api/monitors/${monitorId}`)
+          if (!response.ok) {
+            throw new Error('Failed to fetch monitor')
+          }
+          const data = await response.json()
+          return data
+        } catch (error) {
+          console.error('Error fetching monitor:', error)
         }
       }
     }),
