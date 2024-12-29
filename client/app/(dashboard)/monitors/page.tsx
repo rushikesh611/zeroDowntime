@@ -24,14 +24,6 @@ import { EllipsisIcon, ListChecksIcon, PauseIcon, PlayIcon, TrashIcon } from 'lu
 import { useRouter } from 'next/navigation';
 import { useEffect } from "react";
 
-export interface Monitor {
-  id: string;
-  url: string;
-  status: string;
-  frequency: number;
-  createdAt: string;
-}
-
 const MonitorsPage = () => {
 
   const { user } = useAppStore()
@@ -61,7 +53,7 @@ const MonitorsPage = () => {
         <div className="mt-10 h-2/4">
           {monitors.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-2/4">
-              <p className="text-lg font-medium text-center">You don't have any monitors yet. C</p>
+              <p className="text-lg font-medium text-center">You don't have any monitors yet.</p>
             </div>
           ) : (
             <ScrollArea className="h-screen">
@@ -90,7 +82,7 @@ const MonitorsPage = () => {
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Checked every {monitor.frequency} minutes</p>
+                            <p>Checked every {monitor.frequency} seconds</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

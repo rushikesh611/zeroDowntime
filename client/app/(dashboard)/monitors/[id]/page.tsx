@@ -12,65 +12,46 @@ import RegionalAvailabilityChart from '@/components/dashboard/regional-availabil
 import RegionalResponseChart from '@/components/dashboard/regional-response-chart';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PauseIcon, PlayIcon, SendHorizonalIcon, Settings, ShieldAlert } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-
-
-type Monitor = {
-  id: string;
-  url: string;
-  emails: string[];
-  frequency: number;
-  status: "RUNNING" | "PAUSED";
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type MonitorLog = {
-  id: string;
-  monitorId: string;
-  isUp: boolean;
-  statusCode: number;
-  responseTime: number;
-  region: string;
-  lastCheckedAt: string;
-};
-
+import { PauseIcon, PlayIcon, SendHorizonalIcon, Settings, ShieldAlert } from 'lucide-react';
+import { Monitor, MonitorLog } from '@/types';
 
 
 const MonitorDetailsPage = () => {
-  const { id } = useParams()
+  const { id } = useParams() as { id: string }
 
   const [monitor, setMonitor] = useState<Monitor | null>(null)
-  // const [monitorLogs, setMonitorLogs] = useState<MonitorLog[]>([])
+  const [monitorLogs, setMonitorLogs] = useState<MonitorLog[]>([])
 
-  const { pauseMonitor, startMonitor } = useAppStore()
+  const { pauseMonitor, startMonitor, fetchMonitorById } = useAppStore()
 
   const router = useRouter();
 
   useEffect(() => {
+    fetchMonitorById(id).then((monitor) => {
+      console.log('Monitor:', monitor)
+      if (monitor) {
+        setMonitor(monitor)
+      }
+    })
+
     const fetchData = async () => {
       try {
-        const monitorDetails = await fetchWithAuth('/api/monitors/' + id);
-        // const monitorLogs = await fetchWithAuth('/api/monitors/' + id + '/logs');
-        if (monitorDetails.ok) {
-          const result = await monitorDetails.json();
+        const monitorLogs = await fetchWithAuth('/api/monitors/' + id + '/logs');
 
-          setMonitor(result);
+
+        if (monitorLogs.ok) {
+          const result = await monitorLogs.json();
+          setMonitorLogs(result.flat());
         }
-
-        // if (monitorLogs.ok) {
-        //   const result = await monitorLogs.json();
-        //   setMonitorLogs(result.flat());
-        // }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
 
     fetchData();
-  }, []);
+
+  }, [id, fetchMonitorById])
 
 
   const handleConfigure = (monitorId: string) => {
@@ -87,7 +68,7 @@ const MonitorDetailsPage = () => {
           <div className='ml-3 flex flex-col'>
             <h3 className="text-lg font-medium">{monitor?.url}</h3>
             <p className="line-clamp-2 text-xs text-muted-foreground mt-1">
-              <span className={monitor?.status === 'PAUSED' ? 'text-yellow-500 font-medium' : 'text-green-500 font-medium'}>{monitor?.status}</span> • Checked every {monitor?.frequency} minutes
+              <span className={monitor?.status === 'PAUSED' ? 'text-yellow-500 font-medium' : 'text-green-500 font-medium'}>{monitor?.status}</span> • Checked every {monitor?.frequency} seconds
             </p>
           </div>
         </div>
@@ -98,12 +79,12 @@ const MonitorDetailsPage = () => {
         <Button variant='ghost'><ShieldAlert className='mr-2 w-5 h-5' /> Incident</Button>
         <Button variant='ghost'>
           {monitor?.status === 'PAUSED' ? (
-            <div className="flex items-center" onClick={() => startMonitor(monitor.id)}>
+            <div className="flex items-center" onClick={() => startMonitor(monitor.id).then(() => { setMonitor({ ...monitor, status: 'RUNNING' }); console.log('Start monitor:', monitor.id); })}>
               <PlayIcon className='mr-2 w-5 h-5' />
               Start
             </div>
           ) : (
-            <div className="flex items-center" onClick={() => pauseMonitor(monitor!.id)}>
+            <div className="flex items-center" onClick={() => monitor && pauseMonitor(monitor.id).then(() => { setMonitor({ ...monitor, status: 'PAUSED' }); console.log('Pause monitor:', monitor.id); })}>
               <PauseIcon className='mr-2 w-5 h-5' />
               Pause
             </div>
@@ -114,10 +95,10 @@ const MonitorDetailsPage = () => {
       </div>
 
       <div className='px-3 mb-8'>
-        {/* <RegionalAvailabilityChart data={monitorLogs} /> */}
+        <RegionalAvailabilityChart data={monitorLogs} />
       </div>
       <div className='px-3 mb-8'>
-        {/* <RegionalResponseChart data={monitorLogs} /> */}
+        <RegionalResponseChart data={monitorLogs} />
       </div>
 
       <div className='flex flex-row px-3'>
