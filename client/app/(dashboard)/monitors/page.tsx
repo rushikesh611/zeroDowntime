@@ -28,7 +28,7 @@ const MonitorsPage = () => {
 
   const { user } = useAppStore()
   const router = useRouter();
-  const { monitors, fetchMonitors, pauseMonitor, startMonitor } = useAppStore()
+  const { monitors, fetchMonitors, pauseMonitor, startMonitor, deleteMonitor } = useAppStore()
 
   useEffect(() => {
     fetchMonitors()
@@ -114,7 +114,7 @@ const MonitorsPage = () => {
                             </DropdownMenuItem>
                             < DropdownMenuSeparator />
                             <DropdownMenuItem className="hover:cursor-pointer" asChild>
-                              <div className="flex items-center">
+                              <div className="flex items-center" onClick={(e) => { e.stopPropagation(); deleteMonitor(monitor.id); }}>
                                 <TrashIcon className="h-3 w-3 mr-1" />
                                 Delete
                               </div>

@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { logger } from '../utils/logger';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -14,11 +15,11 @@ export async function sendAlert(emails: string[], url: string, results: any[]) {
         })
 
         if (error) {
-            console.error('Error sending email alert:', error);
+            logger.error('Error sending email alert:', error);
         } else {
-            console.log(`Alert sent to ${emails.join(', ')}. Message ID: ${data?.id}`);
+            logger.info(`Alert sent to ${emails.join(', ')}. Message ID: ${data?.id}`);
         }
     } catch (error) {
-        console.error('Error sending email alert:', error);
+        logger.error('Error sending email alert:', error);
     }
 }

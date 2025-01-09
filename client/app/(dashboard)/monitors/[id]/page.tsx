@@ -29,7 +29,6 @@ const MonitorDetailsPage = () => {
 
   useEffect(() => {
     fetchMonitorById(id).then((monitor) => {
-      console.log('Monitor:', monitor)
       if (monitor) {
         setMonitor(monitor)
       }
@@ -56,7 +55,6 @@ const MonitorDetailsPage = () => {
 
   const handleConfigure = (monitorId: string) => {
     router.push(`/monitors/${monitorId}/update`);
-    console.log('Navigate to update monitor detail page with id:', monitorId);
   }
 
   return (
