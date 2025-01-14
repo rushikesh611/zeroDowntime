@@ -22,17 +22,22 @@ import { formatDateDifference } from "@/lib/utils";
 import { useAppStore } from '@/store/useAppStore';
 import { EllipsisIcon, ListChecksIcon, PauseIcon, PlayIcon, TrashIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const MonitorsPage = () => {
 
   const { user } = useAppStore()
   const router = useRouter();
   const { monitors, fetchMonitors, pauseMonitor, startMonitor, deleteMonitor } = useAppStore()
+  const hasFetched = useRef(false);
+
 
   useEffect(() => {
-    fetchMonitors()
-  }, [fetchMonitors])
+    if(!hasFetched.current) {
+      fetchMonitors();
+      hasFetched.current = true;
+    }
+  }, [])
 
   const handleMonitorClick = (monitorId: string) => {
     router.push(`/monitors/${monitorId}`);

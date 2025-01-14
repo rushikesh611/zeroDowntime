@@ -10,7 +10,7 @@ import authRoutes from './routes/auth'
 import testAuthRoutes from './routes/testAuth'
 import monitorRoutes  from './routes/monitors'
 import { startUptimeCheck } from './jobs/uptimeCheck'
-import { logger } from './utils/logger'
+import { logger, requestLogger } from './utils/logger'
 
 dotenv.config()
 
@@ -35,6 +35,7 @@ app.use(session({
 }))
 app.use(passport.initialize());
 app.use(passport.session());
+// app.use(requestLogger);
 
 // Routes
 app.use('/api/auth', authRoutes)
