@@ -57,6 +57,12 @@ const MonitorDetailsPage = () => {
     router.push(`/monitors/${monitorId}/update`);
   }
 
+  const handleTestAlert = (monitorId: string) => {
+    fetchWithAuth(`/api/monitors/${monitorId}/test-email`, {
+      method: 'POST'
+    }).then(() => console.log('Test alert sent'));
+  }
+
   return (
     <ContentLayout title={`Monitor  >  ${monitor?.id}`}>
 
@@ -73,7 +79,7 @@ const MonitorDetailsPage = () => {
       </div>
 
       <div className='w-full my-12 flex flex-wrap gap-4'>
-        <Button variant='ghost'><SendHorizonalIcon className='mr-2 w-5 h-5' /> Send test alert</Button>
+        <Button variant='ghost' onClick={() => monitor && handleTestAlert(monitor.id)}><SendHorizonalIcon className='mr-2 w-5 h-5' /> Send test alert</Button>
         <Button variant='ghost'><ShieldAlert className='mr-2 w-5 h-5' /> Incident</Button>
         <Button variant='ghost'>
           {monitor?.status === 'PAUSED' ? (

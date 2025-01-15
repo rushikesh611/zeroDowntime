@@ -4,10 +4,12 @@ import auth from '../middleware/auth';
 
 import { checkWebsiteUptime } from '../services/uptimeService';
 import { logger } from '../utils/logger';
+import { Resend } from 'resend'
 
 
 const prisma = new PrismaClient();
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Create monitor
 router.post('/', auth, async (req, res) => {
@@ -180,6 +182,35 @@ router.get('/:id/logs/day', auth, async (req, res) => {
     } catch (error) {
         logger.error('Error getting monitor logs:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// send test email
+router.post('/:id/test-email', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const monitor = await prisma.monitor.findUnique({
+            where: { id, userId: req.user!.id }
+        });
+        if (!monitor) {
+            return res.status(404).json({ error: 'Monitor not found' });
+        }
+        const { emails } = monitor;
+        const emailSource = process.env.EMAIL_SOURCE || '';
+        const { data, error } = await resend.emails.send({
+            from: emailSource,
+            to: emails,
+            subject: '🚨 Test email from ZeroDowntime',
+            text: 'This is a test email from the ZeroDowntime service. If you received this email, it means the email service is working correctly.'
+        });
+        if (error) {
+            logger.error('Error sending test email:', error);
+            return res.status(500).json({ error: 'Error sending test email' });
+        }
+        res.json({ message: 'Test email sent successfully' });
+    } catch (error) {
+        logger.error('Error sending test email:', error);
+        res.status(500).json({ error: 'Error sending test email' });
     }
 });
 
