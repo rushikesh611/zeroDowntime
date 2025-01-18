@@ -79,7 +79,6 @@ const UpdateMonitorPage = () => {
                 throw new Error('Failed to update monitor')
             }
             const result = await response.json()
-            console.log('Monitor updated:', result)
             toast({
                     title: `${result.url}`,
                     description: 'Monitor updated successfully',

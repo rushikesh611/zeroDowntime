@@ -7,6 +7,7 @@
     "build": "tsc",
     "watch": "tsc --watch --noEmit",
     "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
     "test": "jest"
   },
   "repository": {
@@ -32,6 +33,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "@aws-sdk/client-lambda": "^3.731.1",
     "@aws-sdk/types": "^3.609.0",
     "@prisma/client": "^5.18.0",
     "@types/cookie-parser": "^1.4.7",
@@ -40,7 +42,6 @@
     "@types/node-cron": "^3.0.11",
     "@types/passport": "^1.0.16",
     "@types/passport-github2": "^1.2.9",
-    "aws-sdk": "^2.1691.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
