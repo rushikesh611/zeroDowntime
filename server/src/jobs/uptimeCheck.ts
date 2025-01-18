@@ -36,7 +36,7 @@ export function startUptimeCheck() {
             const lastCheckedAt = cache[monitor.id]?.lastCheckedAt || new Date(0)
 
             if (currentTime.getTime() - lastCheckedAt.getTime() >= monitor.frequency * 1000) {
-                const results = await checkWebsiteUptime(monitor.url)
+                const results = await checkWebsiteUptime(monitor.url, monitor.regions)
                 const isDown = results.some(result => !result.isUp)
 
                 if (isDown) {

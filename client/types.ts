@@ -2,6 +2,7 @@ export interface Monitor {
     id: string;
     url: string;
     emails: string[];
+    regions: string[];
     frequency: number;
     status: "RUNNING" | "PAUSED";
     userId: string;

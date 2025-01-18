@@ -1,4 +1,4 @@
-import AWS from 'aws-sdk'
+import AWS from 'aws-sdk';
 import { logger } from '../utils/logger';
 
 AWS.config.update({
@@ -6,9 +6,9 @@ AWS.config.update({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 })
 
-const regions = ['us-east-1', 'eu-west-1', 'ap-south-1'];
+// const regions = ['us-east-1', 'eu-west-1', 'ap-south-1'];
 
-export async function checkWebsiteUptime(url: string) {
+export async function checkWebsiteUptime(url: string, regions: string[]) {
     logger.info(`Checking uptime for ${url} from regions:`, regions)
     const results = await Promise.all(regions.map(region => checkFromRegion(url, region)))
     logger.info(`Uptime check results for ${url}:`, results)

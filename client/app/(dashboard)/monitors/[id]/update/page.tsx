@@ -10,6 +10,7 @@ import { XIcon } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import React, { useEffect, useState } from "react"
 import { fetchWithAuth } from "@/lib/utils"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const UpdateMonitorPage = () => {
     const router = useRouter()
@@ -18,6 +19,7 @@ const UpdateMonitorPage = () => {
     const [emailInput, setEmailInput] = useState('')
     const [emails, setEmails] = useState<string[]>([])
     const [frequency, setFrequency] = useState<number | null>(null)
+    const [selectedRegions, setSelectedRegions] = useState<Set<string>>(new Set())
 
     useEffect(() => {
         const fetchMonitorData = async () => {
@@ -30,6 +32,7 @@ const UpdateMonitorPage = () => {
                 setUrl(data.url)
                 setEmails(data.emails)
                 setFrequency(data.frequency)
+                setSelectedRegions(new Set(data.regions))
             } catch (error) {
                 console.error('Error fetching monitor data:', error)
             }
@@ -49,10 +52,20 @@ const UpdateMonitorPage = () => {
         setEmails(emails.filter(e => e !== email))
     }
 
+    const handleRegionChange = (checked: boolean | "indeterminate", region: string) => {
+        const newSelectedRegions = new Set(selectedRegions)
+        if (checked === true) {
+            newSelectedRegions.add(region)
+        } else {
+            newSelectedRegions.delete(region)
+        }
+        setSelectedRegions(newSelectedRegions)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        const data = { url, emails, frequency }
+        const data = { url, emails, frequency, regions: Array.from(selectedRegions) }
         try {
             const response = await fetchWithAuth(`/api/monitors/${id}`, {
                 method: 'PUT',
@@ -121,6 +134,68 @@ const UpdateMonitorPage = () => {
                         </SelectContent>
                     </Select>
                 </div>
+
+                <div className='mb-4'>
+                    <label className="block text-sm font-medium mb-2">Regions</label>
+                    <div className="flex flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                id="us-east-1"
+                                checked={selectedRegions.has('us-east-1')}
+                                onCheckedChange={(checked) => {
+                                    handleRegionChange(checked, 'us-east-1')
+                                }}
+                            />
+                            <label htmlFor="us-east-1">
+                                <Badge variant="outline" className="flex items-center gap-2 p-2">
+                                    <div className="w-6 h-6 rounded-full overflow-hidden">
+                                        <US className="w-full h-full object-cover" />
+                                    </div>
+                                    US East
+                                </Badge>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                id="eu-west-1"
+                                checked={selectedRegions.has('eu-west-1')}
+                                onCheckedChange={(checked) => {
+                                    handleRegionChange(checked, 'eu-west-1')
+                                }}
+                            />
+                            <label htmlFor="eu-west-1">
+                                <Badge variant="outline" className="flex items-center gap-2 p-2">
+                                    <div className="w-6 h-6 rounded-full overflow-hidden">
+                                        <IE className="w-full h-full object-cover" />
+                                    </div>
+                                    EU West
+                                </Badge>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                id="ap-south-1"
+                                checked={selectedRegions.has('ap-south-1')}
+                                onCheckedChange={(checked) => {
+                                    handleRegionChange(checked, 'ap-south-1')
+                                }}
+                            />
+                            <label htmlFor="ap-south-1">
+                                <Badge variant="outline" className="flex items-center gap-2 p-2">
+                                    <div className="w-6 h-6 rounded-full overflow-hidden">
+                                        <IN className="w-full h-full object-cover" />
+                                    </div>
+                                    Asia Pacific
+                                </Badge>
+                            </label>
+                        </div>
+
+
+                    </div>
+                </div>
+
                 <Button type="submit">Update Monitor</Button>
             </form>
         </ContentLayout>

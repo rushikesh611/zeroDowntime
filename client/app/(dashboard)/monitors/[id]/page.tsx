@@ -80,7 +80,7 @@ const MonitorDetailsPage = () => {
 
       <div className='w-full my-12 flex flex-wrap gap-4'>
         <Button variant='ghost' onClick={() => monitor && handleTestAlert(monitor.id)}><SendHorizonalIcon className='mr-2 w-5 h-5' /> Send test alert</Button>
-        <Button variant='ghost'><ShieldAlert className='mr-2 w-5 h-5' /> Incident</Button>
+        <Button disabled variant='ghost'><ShieldAlert className='mr-2 w-5 h-5' /> Incident</Button>
         <Button variant='ghost'>
           {monitor?.status === 'PAUSED' ? (
             <div className="flex items-center" onClick={() => startMonitor(monitor.id).then(() => { setMonitor({ ...monitor, status: 'RUNNING' }); console.log('Start monitor:', monitor.id); })}>
@@ -110,6 +110,15 @@ const MonitorDetailsPage = () => {
         <div className='flex flex-wrap gap-2'>
           {monitor?.emails.map((email) => (
             <Badge key={email} variant='outline'>{email}</Badge>
+          ))}
+        </div>
+      </div>
+
+      <div className='flex flex-row px-3 mt-10'>
+        <p className="line-clamp-2 text-sm font-medium text-muted-foreground mr-4">Regions :</p>
+        <div className='flex flex-wrap gap-2'>
+          {monitor?.regions.map((region) => (
+            <Badge key={region} variant='outline'>{region}</Badge>
           ))}
         </div>
       </div>

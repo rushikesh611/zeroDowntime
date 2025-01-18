@@ -14,14 +14,15 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // Create monitor
 router.post('/', auth, async (req, res) => {
     try {
-        const { url, emails, frequency } = req.body;
-        logger.info('Creating monitor:', { url, emails, frequency });
+        const { url, emails, frequency, regions } = req.body;
+        logger.info('Creating monitor:', { url, emails, frequency, regions });
         const monitor = await prisma.monitor.create({
             data: {
                 url,
                 emails,
                 frequency: frequency || 600,
-                userId: req.user!.id
+                userId: req.user!.id,
+                regions
             }
         })
         res.status(201).json(monitor);
@@ -68,10 +69,10 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { url, emails, frequency, status } = req.body;
+        const { url, emails, frequency, status, regions } = req.body;
         const updatedMonitor = await prisma.monitor.update({
             where: { id, userId: req.user?.id },
-            data: { url, emails, frequency, status }
+            data: { url, emails, frequency, status, regions }
         })
         res.json(updatedMonitor);
         logger.info('Monitor updated successfully:', { monitorId: updatedMonitor.id });
@@ -108,7 +109,7 @@ router.post('/:id/check', auth, async (req, res) => {
             logger.info('Monitor not found:', { monitorId: id });
             return res.status(404).json({ error: 'Monitor not found' });
         }
-        const uptimeResults = await checkWebsiteUptime(monitor.url);
+        const uptimeResults = await checkWebsiteUptime(monitor.url, monitor.regions);
         res.json(uptimeResults);
         logger.info('Uptime check completed successfully:', { monitorId: id });
     } catch (error) {
