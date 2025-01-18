@@ -2,6 +2,7 @@ import express from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import { User } from '@prisma/client';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.get('/github/callback',
             sameSite: 'strict',
             maxAge: 3600000,
         });
+        logger.info('User logged in', { userId: user.id });
 
         res.redirect('http://localhost:3000/');
     });
@@ -29,9 +31,11 @@ router.get('/github/callback',
 
 router.get('/logout', (req, res) => {
     res.clearCookie('token');
+    logger.info('User logged out', { userId: req.user?.id });
     req.logout((err) => {
         if (err) {
             console.error('Logout error:', err);
+            logger.error('Logout error:', err);
         }
         res.redirect('/');
     });

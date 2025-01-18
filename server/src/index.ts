@@ -10,6 +10,7 @@ import authRoutes from './routes/auth'
 import testAuthRoutes from './routes/testAuth'
 import monitorRoutes  from './routes/monitors'
 import { startUptimeCheck } from './jobs/uptimeCheck'
+import { logger, requestLogger } from './utils/logger'
 
 dotenv.config()
 
@@ -34,6 +35,7 @@ app.use(session({
 }))
 app.use(passport.initialize());
 app.use(passport.session());
+// app.use(requestLogger);
 
 // Routes
 app.use('/api/auth', authRoutes)
@@ -45,17 +47,16 @@ app.get('/', (req: any, res: any) => {
 })
 
 startUptimeCheck()
-console.log('Uptime check job started')
-
+logger.info('Uptime check job started')
 
 // Start the server
 app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
   try {
     await prisma.$connect();
-    console.log('Database connected successfully');
+    logger.info('Database connected successfully');
   } catch (error) {
-    console.error('Database connection failed:', error);
+    logger.error('Database connection failed:', error);
     process.exit(1);
   }
 });

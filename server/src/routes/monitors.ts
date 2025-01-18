@@ -3,26 +3,32 @@ import { PrismaClient } from '@prisma/client';
 import auth from '../middleware/auth';
 
 import { checkWebsiteUptime } from '../services/uptimeService';
+import { logger } from '../utils/logger';
+import { Resend } from 'resend'
 
 
 const prisma = new PrismaClient();
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Create monitor
 router.post('/', auth, async (req, res) => {
     try {
-        const { url, emails, frequency } = req.body;
+        const { url, emails, frequency, regions } = req.body;
+        logger.info('Creating monitor:', { url, emails, frequency, regions });
         const monitor = await prisma.monitor.create({
             data: {
                 url,
                 emails,
                 frequency: frequency || 600,
-                userId: req.user!.id
+                userId: req.user!.id,
+                regions
             }
         })
         res.status(201).json(monitor);
+        logger.info('Monitor created successfully:', { monitorId: monitor.id });
     } catch (error) {
-        console.log('Error creating monitor', error);
+        logger.error('Error creating monitor:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 })
@@ -34,8 +40,9 @@ router.get('/', auth, async (req, res) => {
             where: { userId: req.user?.id }
         })
         res.json(monitors);
+        logger.info('Monitors retrieved successfully:', {monitorsCount: monitors.length});
     } catch (error) {
-        console.log('Error getting monitors', error);
+        logger.error('Error getting monitors:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 })
@@ -51,8 +58,9 @@ router.get('/:id', auth, async (req, res) => {
             return res.status(404).json({ error: 'Monitor not found' });
         }
         res.json(monitor);
+        logger.info('Monitor retrieved successfully:', { monitorId: monitor.id });
     } catch (error) {
-        console.log('Error getting monitor', error);
+        logger.error('Error getting monitor:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 })
@@ -61,14 +69,15 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { url, emails, frequency, status } = req.body;
+        const { url, emails, frequency, status, regions } = req.body;
         const updatedMonitor = await prisma.monitor.update({
             where: { id, userId: req.user?.id },
-            data: { url, emails, frequency, status }
+            data: { url, emails, frequency, status, regions }
         })
         res.json(updatedMonitor);
+        logger.info('Monitor updated successfully:', { monitorId: updatedMonitor.id });
     } catch (error) {
-        console.log('Error updating monitor', error);
+        logger.error('Error updating monitor:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 })
@@ -82,8 +91,9 @@ router.delete('/:id', auth, async (req, res) => {
             where: { id, userId: req.user?.id }
         })
         res.json({ message: 'Monitor deleted successfully' });
+        logger.info('Monitor deleted successfully:', { monitorId: id });
     } catch (error) {
-        console.log('Error deleting monitor', error);
+        logger.error('Error deleting monitor:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 })
@@ -96,12 +106,14 @@ router.post('/:id/check', auth, async (req, res) => {
             where: { id, userId: req.user!.id }
         });
         if (!monitor) {
+            logger.info('Monitor not found:', { monitorId: id });
             return res.status(404).json({ error: 'Monitor not found' });
         }
-        const uptimeResults = await checkWebsiteUptime(monitor.url);
+        const uptimeResults = await checkWebsiteUptime(monitor.url, monitor.regions);
         res.json(uptimeResults);
+        logger.info('Uptime check completed successfully:', { monitorId: id });
     } catch (error) {
-        console.error('Error checking uptime:', error);
+        logger.error('Error checking uptime:', error);
         res.status(500).json({ error: 'Error checking uptime' });
     }
 });
@@ -116,7 +128,7 @@ router.get('/:id/logs', auth, async (req, res) => {
         });
         res.json(logs);
     } catch (error) {
-        console.log('Error getting monitor logs', error);
+        logger.error('Error getting monitor logs:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -131,7 +143,7 @@ router.get('/:id/logs/:region', auth, async (req, res) => {
         });
         res.json(logs);
     } catch (error) {
-        console.log('Error getting monitor logs', error);
+        logger.error('Error getting monitor logs:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -148,7 +160,7 @@ router.get('/:id/logs/hour', auth, async (req, res) => {
         console.log(logs);  
         res.json(logs);
     } catch (error) {
-        console.log('Error getting monitor logs', error);
+        logger.error('Error getting monitor logs:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -169,8 +181,37 @@ router.get('/:id/logs/day', auth, async (req, res) => {
         console.log('Logs:', logs);
         res.json(logs);
     } catch (error) {
-        console.log('Error getting monitor logs', error);
+        logger.error('Error getting monitor logs:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// send test email
+router.post('/:id/test-email', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const monitor = await prisma.monitor.findUnique({
+            where: { id, userId: req.user!.id }
+        });
+        if (!monitor) {
+            return res.status(404).json({ error: 'Monitor not found' });
+        }
+        const { emails } = monitor;
+        const emailSource = process.env.EMAIL_SOURCE || '';
+        const { data, error } = await resend.emails.send({
+            from: emailSource,
+            to: emails,
+            subject: '🚨 Test email from ZeroDowntime',
+            text: 'This is a test email from the ZeroDowntime service. If you received this email, it means the email service is working correctly.'
+        });
+        if (error) {
+            logger.error('Error sending test email:', error);
+            return res.status(500).json({ error: 'Error sending test email' });
+        }
+        res.json({ message: 'Test email sent successfully' });
+    } catch (error) {
+        logger.error('Error sending test email:', error);
+        res.status(500).json({ error: 'Error sending test email' });
     }
 });
 

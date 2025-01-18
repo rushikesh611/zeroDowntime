@@ -1,7 +1,7 @@
 import { fetchWithAuth } from '@/lib/utils';
 import { Monitor } from '@/types';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 
 type User = {
   id: string;
@@ -29,9 +29,11 @@ interface AppStore {
   pauseMonitor: (monitorId: string) => Promise<void>
   startMonitor: (monitorId: string) => Promise<void>
   fetchMonitorById: (monitorId: string) => Promise<Monitor | undefined>
+  deleteMonitor: (monitorId: string) => Promise<void>
 }
 
 export const useAppStore = create<AppStore>()(
+  devtools(
   persist(
     (set, get) => ({
       user: null,
@@ -142,11 +144,27 @@ export const useAppStore = create<AppStore>()(
         } catch (error) {
           console.error('Error fetching monitor:', error)
         }
+      },
+      deleteMonitor: async (monitorId: string) => {
+        try {
+          const response = await fetchWithAuth(`/api/monitors/${monitorId}`, {
+            method: 'DELETE'
+          })
+          if (!response.ok) {
+            throw new Error('Failed to delete monitor')
+          }
+          set((state) => ({
+            monitors: state.monitors.filter((monitor) => monitor.id !== monitorId)
+          }))
+        } catch (error) {
+          console.error('Error deleting monitor:', error)
+        }
       }
-    }),
+      }),
     {
       name: 'app-storage',
       partialize: (state) => ({ user: state.user, isSidebarOpen: state.isSidebarOpen }),
     }
   )
+)
 );

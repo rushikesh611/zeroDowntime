@@ -15,6 +15,13 @@ import {
 export function ModeToggle() {
   const { setTheme, theme } = useTheme();
 
+  React.useEffect(() => {
+    document.body.classList.add('transition-theme');
+    return () => {
+      document.body.classList.remove('transition-theme');
+    };
+  }, [theme]);
+
   return (
     <TooltipProvider disableHoverableContent>
       <Tooltip delayDuration={100}>

@@ -13,12 +13,14 @@ import React, { useState } from 'react'
 import { fetchWithAuth } from '@/lib/utils'
 import { IE, IN, US } from 'country-flag-icons/react/3x2'
 import { useRouter } from 'next/navigation'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const Page = () => {
   const [url, setUrl] = useState('')
   const [emailInput, setEmailInput] = useState('')
   const [emails, setEmails] = useState<string[]>([])
   const [frequency, setFrequency] = useState<number | null>(null)
+  const [selectedRegions, setSelectedRegions] = useState<Set<string>>(new Set())
   const router = useRouter();
 
   const handleAddEmail = () => {
@@ -32,10 +34,21 @@ const Page = () => {
     setEmails(emails.filter(e => e !== email))
   }
 
+  const handleRegionChange = (checked: boolean | "indeterminate", region: string) => {
+    const newSelectedRegions = new Set(selectedRegions)
+    if (checked === true) {
+      newSelectedRegions.add(region)
+    } else {
+      newSelectedRegions.delete(region)
+    }
+    setSelectedRegions(newSelectedRegions)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const data = { url, emails, frequency }
+    const data = { url, emails, frequency, regions: Array.from(selectedRegions) }
+    console.log('Creating monitor:', data)
     try {
       const response = await fetchWithAuth('/api/monitors', {
         method: 'POST',
@@ -112,24 +125,61 @@ const Page = () => {
         <div className='mb-4'>
           <label className="block text-sm font-medium mb-2">Regions</label>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="flex items-center gap-2 p-2">
-              <div className="w-6 h-6 rounded-full overflow-hidden">
-                <US className="w-full h-full object-cover" />
-              </div>
-              US East
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-2 p-2">
-              <div className="w-6 h-6 rounded-full overflow-hidden">
-                <IE className="w-full h-full object-cover" />
-              </div>
-              EU West
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-2 p-2">
-              <div className="w-6 h-6 rounded-full overflow-hidden">
-                <IN className="w-full h-full object-cover" />
-              </div>
-              Asia Pacific
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="us-east-1"
+                checked={selectedRegions.has('us-east-1')}
+                onCheckedChange={(checked) => {
+                  handleRegionChange(checked, 'us-east-1')
+                }}
+              />
+              <label htmlFor="us-east-1">
+                <Badge variant="outline" className="flex items-center gap-2 p-2">
+                  <div className="w-6 h-6 rounded-full overflow-hidden">
+                    <US className="w-full h-full object-cover" />
+                  </div>
+                  US East
+                </Badge>
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="eu-west-1"
+                checked={selectedRegions.has('eu-west-1')}
+                onCheckedChange={(checked) => {
+                  handleRegionChange(checked, 'eu-west-1')
+                }}
+              />
+              <label htmlFor="eu-west-1">
+                <Badge variant="outline" className="flex items-center gap-2 p-2">
+                  <div className="w-6 h-6 rounded-full overflow-hidden">
+                    <IE className="w-full h-full object-cover" />
+                  </div>
+                  EU West
+                </Badge>
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="ap-south-1"
+                checked={selectedRegions.has('ap-south-1')}
+                onCheckedChange={(checked) => {
+                  handleRegionChange(checked, 'ap-south-1')
+                }}
+              />
+              <label htmlFor="ap-south-1">
+                <Badge variant="outline" className="flex items-center gap-2 p-2">
+                  <div className="w-6 h-6 rounded-full overflow-hidden">
+                    <IN className="w-full h-full object-cover" />
+                  </div>
+                  Asia Pacific
+                </Badge>
+              </label>
+            </div>
+
+
           </div>
         </div>
         <Button type="submit" className='mt-10'>Create Monitor</Button>
