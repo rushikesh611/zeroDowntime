@@ -52,10 +52,13 @@ logger.info('Uptime check job started')
 // Start the server
 app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
   try {
     await prisma.$connect();
+    console.log('Database connected successfully');
     logger.info('Database connected successfully');
   } catch (error) {
+    console.log('Database connection failed:', error);
     logger.error('Database connection failed:', error);
     process.exit(1);
   }
