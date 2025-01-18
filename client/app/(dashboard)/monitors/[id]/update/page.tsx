@@ -11,6 +11,7 @@ import { useRouter, useParams } from "next/navigation"
 import React, { useEffect, useState } from "react"
 import { fetchWithAuth } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from "@/hooks/use-toast"
 
 const UpdateMonitorPage = () => {
     const router = useRouter()
@@ -79,6 +80,10 @@ const UpdateMonitorPage = () => {
             }
             const result = await response.json()
             console.log('Monitor updated:', result)
+            toast({
+                    title: `${result.url}`,
+                    description: 'Monitor updated successfully',
+                  })
             router.push(`/monitors/${id}`)
         } catch (error) {
             console.error('Error updating monitor:', error)

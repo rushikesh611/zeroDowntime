@@ -1,6 +1,6 @@
-import { MonitorLog } from "@/app/(dashboard)/monitors/[id]/page";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MonitorLog } from "@/types";
 import { useEffect, useMemo, useState } from 'react';
 import {
     CartesianGrid,
@@ -37,7 +37,7 @@ interface RegionalAvailabilityChartProps {
     data?: MonitorLog[];
 }
 
-interface CustomTooltipProps extends TooltipProps<any, any> {
+interface CustomTooltipProps extends TooltipProps<number, string> {
     active?: boolean;
     payload?: Array<{
         value: number;
