@@ -17,9 +17,10 @@ dotenv.config()
 export const app = express()
 const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient()
+const isProd = process.env.NODE_ENV === 'production'
 
 const corsOptions = {
-    origin:'http://localhost:3000', 
+    origin: isProd ? 'http://zd-client:3000':'http://localhost:3000', 
     credentials:true,           
     optionSuccessStatus:200
 }

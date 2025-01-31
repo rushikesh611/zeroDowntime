@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    output: 'standalone',
     async rewrites() {
+        const isProd = process.env.NODE_ENV === 'production';
         return [
             {
                 source: '/api/:path*',
-                destination: 'http://localhost:3001/api/:path*',
+                destination: `http://${isProd ? 'zd-api': 'localhost'}:3001/api/:path*`,
             },
         ];
     }
