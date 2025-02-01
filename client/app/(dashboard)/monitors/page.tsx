@@ -37,7 +37,7 @@ const MonitorsPage = () => {
       fetchMonitors();
       hasFetched.current = true;
     }
-  }, [])
+  }, [fetchMonitors]);
 
   const handleMonitorClick = (monitorId: string) => {
     router.push(`/monitors/${monitorId}`);
@@ -58,7 +58,7 @@ const MonitorsPage = () => {
         <div className="mt-10 h-2/4">
           {monitors.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-2/4">
-              <p className="text-lg font-medium text-center">You don't have any monitors yet.</p>
+              <p className="text-lg font-medium text-center">You don&apos;t have any monitors yet.</p>
             </div>
           ) : (
             <ScrollArea className="h-screen">

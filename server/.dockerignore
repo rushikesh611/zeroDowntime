@@ -1,0 +1,14 @@
+**/*.env
+**/.env.docker
+
+# Dependencies
+**/node_modules
+
+# Other unnecessary files or directories
+.git/
+
+# Build files
+dist/
+
+# logs
+logs/

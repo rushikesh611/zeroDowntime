@@ -1,0 +1,31 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  NODE_ENV: production
+  DOCKER_API_IMAGE: rushikesh611/zerodowntime-api
+  DOCKER_CLIENT_IMAGE: rushikesh611/zerodowntime-client
+
+jobs:
+  publish_images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: |
+          docker build ./server/ -t ${{ env.DOCKER_API_IMAGE }}:latest --build-arg NODE_ENV=production
+          docker build ./client/ -t ${{ env.DOCKER_CLIENT_IMAGE }}:latest --build-arg NODE_ENV=production
+
+      - name: Login to Docker Hub
+        run: docker login -u rushikesh611 -p ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Push Docker images
+        run: |
+          docker push ${{ env.DOCKER_API_IMAGE }}:latest
+          docker push ${{ env.DOCKER_CLIENT_IMAGE }}:latest

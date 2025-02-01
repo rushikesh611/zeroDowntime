@@ -40,7 +40,7 @@ export default function Home() {
     if (user && !isLoading && !isPageLoading) {
       router.push('/monitors');
     }
-  }, [user, isLoading, isPageLoading]);
+  }, [user, isLoading, isPageLoading, router]);
 
   if (isPageLoading || (user && !isLoading)) {
     return (
@@ -70,7 +70,7 @@ export default function Home() {
                   Keep Your Website Always Online
                 </h1>
                 <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-                  Monitor your website's uptime, get instant alerts, and ensure maximum availability.
+                  Monitor your website&apos;s uptime, get instant alerts, and ensure maximum availability.
                 </p>
               </div>
               <div className="space-x-4 flex items-center">

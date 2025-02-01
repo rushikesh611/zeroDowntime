@@ -17,9 +17,10 @@ dotenv.config()
 export const app = express()
 const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient()
+const isProd = process.env.NODE_ENV === 'production'
 
 const corsOptions = {
-    origin:'http://localhost:3000', 
+    origin: isProd ? 'http://zd-client:3000':'http://localhost:3000', 
     credentials:true,           
     optionSuccessStatus:200
 }
@@ -52,10 +53,13 @@ logger.info('Uptime check job started')
 // Start the server
 app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
   try {
     await prisma.$connect();
+    console.log('Database connected successfully');
     logger.info('Database connected successfully');
   } catch (error) {
+    console.log('Database connection failed:', error);
     logger.error('Database connection failed:', error);
     process.exit(1);
   }

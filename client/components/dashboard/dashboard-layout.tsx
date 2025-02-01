@@ -15,8 +15,6 @@ export default function DashboardLayout({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const sidebar = useAppStore((state) => state);
 
-  if (!sidebar) return null;
-
   useEffect(() => {
     const user = useAppStore.getState().user;
     if (!user) {
@@ -26,7 +24,9 @@ export default function DashboardLayout({
     } else {
       setIsAuthenticated(true);
     }
-  });
+  },[isAuthenticated]);
+
+  if (!sidebar) return null;
 
   if (!sidebar || !isAuthenticated) return null;
 
