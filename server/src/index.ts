@@ -20,7 +20,7 @@ const prisma = new PrismaClient()
 const isProd = process.env.NODE_ENV === 'production'
 
 const corsOptions = {
-    origin: isProd ? 'http://zd-client:3000':'http://localhost:3000', 
+    origin: isProd ? 'http://zd-client-service:3000':'http://localhost:3000', 
     credentials:true,           
     optionSuccessStatus:200
 }

@@ -6,7 +6,7 @@ const nextConfig = {
         return [
             {
                 source: '/api/:path*',
-                destination: `http://${isProd ? 'zd-api': 'localhost'}:3001/api/:path*`,
+                destination: `http://${isProd ? 'zd-api-service': 'localhost'}:3001/api/:path*`,
             },
         ];
     }
