@@ -1,6 +1,7 @@
 import winston from "winston";
 import "winston-daily-rotate-file";
 import { v4 as uuidv4 } from 'uuid';
+import { LogVaultTransport } from "./logvaultTransportUtil";
 
 const { combine, timestamp, json, ms } = winston.format;
 
@@ -11,10 +12,12 @@ const fileRotateTransport = new winston.transports.DailyRotateFile({
     maxFiles: '7d',
   });
 
+  const logVaultTransport = new LogVaultTransport();
+
 export const logger = winston.createLogger({
     level: "info",
     format: combine(timestamp(), json(), ms(), ),
-    transports: [fileRotateTransport],
+    transports: [fileRotateTransport, logVaultTransport],
 })
 
 export const requestLogger = (req: any, res: any, next: any) => {
