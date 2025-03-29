@@ -31,12 +31,21 @@ es = Elasticsearch(
 # Elasticsearch index settings for logs
 INDEX_MAPPING = {
     "mappings": {
+        "dynamic": True,  # Automatically map new fields
         "properties": {
-            "timestamp": {"type": "date"},
-            "source": {"type": "keyword"},
-            "level": {"type": "keyword"},
-            "message": {"type": "text"},
-            "metadata": {"type": "object", "enabled": True}
+            "timestamp": {"type": "date"},  # Keep timestamp as date for sorting/filtering
+            "source": {"type": "keyword"},  # Keep source as keyword for exact matching
+            "level": {"type": "keyword"},   # Keep level as keyword for exact matching
+            "message": {
+                "type": "text",
+                "fields": {
+                    "keyword": {"type": "keyword"}  # Allow both full-text and exact matching
+                }
+            },
+            "metadata": {
+                "type": "object",
+                "dynamic": True  # Allow any structure in metadata
+            }
         }
     }
 }
