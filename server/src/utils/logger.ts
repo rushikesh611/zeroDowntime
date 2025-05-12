@@ -20,8 +20,8 @@ export const logVaultTransport = new LogVaultTransport({
 export const logger = winston.createLogger({
   level: "info",
   format: combine(timestamp(), json(), ms(),),
-  // transports: [fileRotateTransport],
-  transports: [fileRotateTransport, logVaultTransport],
+  transports: [fileRotateTransport],
+  // transports: [fileRotateTransport, logVaultTransport],
 })
 
 export const requestLogger = (req: any, res: any, next: any) => {

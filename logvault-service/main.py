@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, Query
+from fastapi import FastAPI, HTTPException, status, Query, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from elasticsearch import Elasticsearch
 from pydantic import BaseModel
@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import logging
 from dotenv import load_dotenv
 import os
+from fastapi.security import APIKeyHeader
+import httpx
 
 load_dotenv()
 
@@ -24,9 +26,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-es = Elasticsearch(
-    os.getenv('ELASTICSEARCH_URL'), api_key=os.getenv('ELASTICSEARCH_API_KEY')
-)
+def get_elasticsearch_config():
+    """Get Elasticsearch configuration based on environment"""
+    env = os.getenv('APP_ENV', 'development')
+    
+    if env == 'production':
+        # Production configuration using ES cloud service
+        return {
+            'cloud_id': os.getenv('ELASTICSEARCH_CLOUD_ID'),
+            'api_key': os.getenv('ELASTICSEARCH_API_KEY')
+        }
+    else:
+        # Local development configuration
+        return {
+            'hosts': os.getenv('ELASTICSEARCH_URL', 'http://localhost:9200'),
+            'basic_auth': (
+                os.getenv('ELASTICSEARCH_USERNAME', ''),
+                os.getenv('ELASTICSEARCH_PASSWORD', '')
+            ) if os.getenv('ELASTICSEARCH_USERNAME') else None
+        }
+
+# Update the ES client initialization
+es_config = get_elasticsearch_config()
+es = Elasticsearch(**es_config)
+
+API_KEY_HEADER = APIKeyHeader(name="X-API-Key")
+AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL', 'http://localhost:3001/api/log')
 
 # Elasticsearch index settings for logs
 INDEX_MAPPING = {
@@ -87,17 +112,50 @@ class LogEntry(BaseModel):
 class LogBatch(BaseModel):
     logs: List[LogEntry]
 
-
 @app.on_event("startup")
 async def startup_event():
+    """Initialize Elasticsearch and HTTP client"""
     init_elasticsearch()
+    app.state.client = httpx.AsyncClient()
 
-@app.post("/logs", status_code=status.HTTP_201_CREATED)
-async def ingest_logs(logs: LogBatch):
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close HTTP client"""
+    await app.state.client.aclose()
+
+@app.post("/logs")
+async def ingest_logs(logs: LogBatch,
+    request: Request,
+    api_key: str = Header(None, alias="X-API-Key")):
+
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key required"
+        )
+
+    # validate API key
+    source = await validate_api_key(api_key, request)
+    if not source:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key"
+        )
+    
+
     actions = []
     now = datetime.utcnow().isoformat()
 
     for log in logs.logs:
+        # Honor the source provided by the client if present,
+        # otherwise use the one from validation
+        if not log.source or log.source == "default-client":
+            log.source = source.get("name", "unknown")
+        
+        # Add additional metadata
+        log.metadata["sourceId"] = source.get("id")
+        log.metadata["userId"] = source.get("userId")
+
         if not log.timestamp:
             log.timestamp = now
         
@@ -120,16 +178,20 @@ async def ingest_logs(logs: LogBatch):
 
 @app.get("/search")
 async def search_logs(
+    request: Request,
     q: str = Query("*", description="Free text search query"),
-    limit: int = Query(100, description="Maximum number of results to return")
+    limit: int = Query(100, description="Maximum number of results to return"),
+    api_key: str = Depends(API_KEY_HEADER)
 ):
-    """Simple free-text search for logs"""
+    user_id = await get_current_user(request, api_key)
     # Build simple Elasticsearch query
     es_query = {
         "query": {
-            "query_string": {
-                "query": q,
-                "default_field": "message"
+            "bool": {
+                "must": [
+                    {"query_string": {"query": q, "default_field": "message"}},
+                    {"term": {"metadata.userId": user_id}}
+                ]
             }
         },
         "sort": [{"timestamp": "desc"}],
@@ -185,55 +247,83 @@ async def get_levels():
     
     return {"levels": levels}
 
+async def validate_api_key(api_key: str, request: Request) -> Optional[dict]:
+    """Validate API key by calling auth service"""
+    try:
+        response = await request.app.state.client.get(
+            f"{AUTH_SERVICE_URL}/validate",
+            headers={"X-API-Key": api_key}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Ensure consistent field names
+            return {
+                "id": data.get("id"),
+                "name": data.get("name"),  # This will be used as the source
+                "userId": data.get("userId"),
+                "source": data.get("name")  # For backward compatibility
+            }
+        return None
+    except Exception as e:
+        logger.error(f"Error validating API key: {e}")
+        return None
+
+async def get_current_user(
+    request: Request,
+    api_key: str = Depends(API_KEY_HEADER)
+) -> str:
+    """Get current user from API key"""
+    source = await validate_api_key(api_key, request)
+    if not source:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key"
+        )
+    return source["userId"]
+
+@app.get("/validate")
+async def validate_api_key_endpoint(
+    request: Request,
+    api_key: str = Depends(API_KEY_HEADER)
+):
+    source_info = await validate_api_key(api_key, request)
+    
+    if not source_info:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key"
+        )
+    
+    return source_info
+
+
 @app.get("/health")
 async def health_check():
-    """Ultra simple health check for serverless mode - just checks connectivity"""
+    """Health check that works with both local and cloud ES"""
     try:
-        # Just try to get information about a specific index or create a test document
-        is_alive = False
-        error_message = None
-        
-        try:
-            # Try a simple info request - this should work in serverless
-            info = es.info()
-            is_alive = True
-        except Exception as e:
-            error_message = str(e)
-            
-            # If info fails, try an extremely simple operation
-            try:
-                # Test connectivity by trying to create a test document
-                test_response = es.index(
-                    index="logs-test", 
-                    document={
-                        "timestamp": datetime.utcnow().isoformat(),
-                        "message": "Health check test",
-                        "level": "INFO",
-                        "source": "health-check"
-                    },
-                    refresh=True
-                )
-                is_alive = True
-                error_message = None
-            except Exception as e2:
-                error_message = f"Connection test failed: {str(e2)}"
+        # Check ES connectivity with a simple ping
+        is_alive = es.ping()
         
         if is_alive:
             return {
                 "status": "healthy",
                 "elasticsearch": "connected",
+                "environment": os.getenv('APP_ENV', 'development'),
                 "app": "running"
             }
         else:
             return {
                 "status": "unhealthy",
                 "elasticsearch": "not connected",
-                "error": error_message,
+                "environment": os.getenv('APP_ENV', 'development'),
                 "app": "running"
             }
     except Exception as e:
         return {
             "status": "unhealthy",
             "error": str(e),
+            "environment": os.getenv('APP_ENV', 'development'),
             "app": "running"
         }
