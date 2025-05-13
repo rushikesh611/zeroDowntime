@@ -1,1 +1,1 @@
-zero downtime
+zero downtime - A Betterstack clone built with just prompts on github copilot. 

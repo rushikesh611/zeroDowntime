@@ -1,3 +1,4 @@
+import math
 from fastapi import FastAPI, HTTPException, status, Query, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from elasticsearch import Elasticsearch
@@ -179,39 +180,134 @@ async def ingest_logs(logs: LogBatch,
 @app.get("/search")
 async def search_logs(
     request: Request,
-    q: str = Query("*", description="Free text search query"),
-    limit: int = Query(100, description="Maximum number of results to return"),
+    q: str = Query(None, description="Search query"),
+    source: str = Query(None, description="Log source"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(20, ge=1, le=100, description="Results per page"),
     api_key: str = Depends(API_KEY_HEADER)
 ):
-    user_id = await get_current_user(request, api_key)
-    # Build simple Elasticsearch query
-    es_query = {
+    # Validate API key first
+    user = await get_current_user(request, api_key)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
+    
+    # Build Elasticsearch query
+    search_query = {
         "query": {
             "bool": {
-                "must": [
-                    {"query_string": {"query": q, "default_field": "message"}},
-                    {"term": {"metadata.userId": user_id}}
-                ]
+                "must": [],
+                "must_not": [],
+                "should": []
             }
         },
-        "sort": [{"timestamp": "desc"}],
+        "sort": [{"timestamp": "desc"}],  # Recent logs first
+        "from": (page - 1) * limit,
         "size": limit
     }
     
+    # Add source filter if provided
+    if source:
+        search_query["query"]["bool"]["must"].append({"term": {"source": source}})
+    
+    # Process advanced search query if provided
+    if q:
+        # Parse query for advanced syntax - AND, OR, NOT
+        try:
+            # Handle NOT operator
+            not_terms = []
+            if " NOT " in q.upper():
+                # Extract NOT clauses
+                parts = q.split(" NOT ")
+                q = parts[0]  # Keep the main query
+                
+                # Add NOT terms
+                for not_part in parts[1:]:
+                    # Handle if the NOT term is part of a larger expression
+                    not_term = not_part.split(" AND ")[0].split(" OR ")[0].strip()
+                    not_terms.append(not_term)
+            
+            # Handle AND/OR operators
+            and_terms = []
+            or_terms = []
+            
+            # If we still have AND/OR operators
+            if " AND " in q.upper() or " OR " in q.upper():
+                parts = re.split(r' (?:AND|OR) ', q, flags=re.IGNORECASE)
+                
+                # Extract the operators
+                operators = re.findall(r' (AND|OR) ', " " + q + " ", flags=re.IGNORECASE)
+                
+                for i, part in enumerate(parts):
+                    if i == 0:  # First term always goes into must
+                        and_terms.append(part.strip())
+                    elif i <= len(operators) and operators[i-1].upper() == "AND":
+                        and_terms.append(part.strip())
+                    else:
+                        or_terms.append(part.strip())
+            else:
+                # Simple query with no operators
+                and_terms.append(q.strip())
+            
+            # Add AND terms
+            for term in and_terms:
+                if term:
+                    search_query["query"]["bool"]["must"].append({
+                        "query_string": {"query": term}
+                    })
+            
+            # Add OR terms
+            for term in or_terms:
+                if term:
+                    search_query["query"]["bool"]["should"].append({
+                        "query_string": {"query": term}
+                    })
+            
+            # Add NOT terms
+            for term in not_terms:
+                if term:
+                    search_query["query"]["bool"]["must_not"].append({
+                        "query_string": {"query": term}
+                    })
+            
+            # If we have OR terms, set minimum_should_match
+            if or_terms:
+                search_query["query"]["bool"]["minimum_should_match"] = 1
+                
+        except Exception as e:
+            logger.error(f"Error parsing advanced query: {e}")
+            # Fall back to simple query
+            search_query["query"]["bool"]["must"].append({
+                "query_string": {"query": q}
+            })
+    
     # Execute search
-    result = es.search(index="logs", body=es_query)
-    
-    # Format response
-    hits = result["hits"]["hits"]
-    total = result["hits"]["total"]["value"] if "total" in result["hits"] else len(hits)
-    
-    logs = [{"id": hit["_id"], **hit["_source"]} for hit in hits]
-    
-    return {
-        "total": total,
-        "logs": logs,
-        "query": q
-    }
+    try:
+        result = es.search(
+            index="logs",
+            body=search_query,
+            track_total_hits=True
+        )
+        
+        # Process results
+        logs = []
+        for hit in result["hits"]["hits"]:
+            log = hit["_source"]
+            log["id"] = hit["_id"]
+            logs.append(log)
+        
+        total = result["hits"]["total"]["value"]
+        
+        return {
+            "logs": logs,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": math.ceil(total / limit)
+        }
+        
+    except Exception as e:
+        logger.error(f"Search error: {e}")
+        raise HTTPException(status_code=500, detail="Search failed")
 
 @app.get("/sources")
 async def get_sources():

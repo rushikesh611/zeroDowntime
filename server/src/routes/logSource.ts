@@ -27,13 +27,20 @@ router.post('/', auth, async(req, res) => {
 router.get('/', auth, async (req, res) => {
     try {
       const userId = req.user!.id;
+
+      if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
       const sources = await LogSourceService.getLogSources(userId);
       
       res.json(sources.map(s => ({
         id: s.id,
         name: s.name,
+        apiKey: s.apiKey,
         createdAt: s.createdAt
       })));
+
     } catch (error) {
       logger.error('Failed to fetch log sources', { error });
       res.status(500).json({ error: 'Failed to fetch log sources' });
