@@ -75,7 +75,7 @@ import {
           {
             href: "/logtail/sources",
             label: "Logtail",
-            active: pathname.includes(""),
+            active: pathname.includes("/logtail"),
             icon: Logs,
             submenus: [
               {

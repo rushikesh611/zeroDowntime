@@ -25,7 +25,7 @@ export class LogSourceService {
     }
 
     static async deleteLogSource(id: string, userId: string) {
-        return prisma.logSource.deleteMany({
+        return prisma.logSource.delete({
             where: {
                 id,
                 userId
