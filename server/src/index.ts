@@ -8,9 +8,11 @@ import { PrismaClient } from '@prisma/client'
 
 import authRoutes from './routes/auth'
 import testAuthRoutes from './routes/testAuth'
-import monitorRoutes  from './routes/monitors'
+import monitorRoutes from './routes/monitors'
+import logRoutes from './routes/logSource'
 import { startUptimeCheck } from './jobs/uptimeCheck'
 import { logger, requestLogger } from './utils/logger'
+import { logVaultTransport } from './utils/logger'
 
 dotenv.config()
 
@@ -20,9 +22,9 @@ const prisma = new PrismaClient()
 const isProd = process.env.NODE_ENV === 'production'
 
 const corsOptions = {
-    origin: isProd ? 'http://zd-client-service:3000':'http://localhost:3000', 
-    credentials:true,           
-    optionSuccessStatus:200
+  origin: isProd ? 'http://zd-client-service:3000' : 'http://localhost:3000',
+  credentials: true,
+  optionSuccessStatus: 200
 }
 
 // Middleware
@@ -42,6 +44,7 @@ app.use(passport.session());
 app.use('/api/auth', authRoutes)
 app.use('/api', testAuthRoutes)
 app.use('/api/monitors', monitorRoutes)
+app.use('/api/log', logRoutes)
 
 app.get('/', (req: any, res: any) => {
   res.send('Zero Downtime')
@@ -49,6 +52,11 @@ app.get('/', (req: any, res: any) => {
 
 startUptimeCheck()
 logger.info('Uptime check job started')
+
+process.on('SIGTERM', async () => {
+  await logVaultTransport.close();
+  process.exit(0);
+});
 
 // Start the server
 app.listen(PORT, async () => {

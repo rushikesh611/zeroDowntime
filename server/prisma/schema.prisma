@@ -14,12 +14,13 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  githubId  String    @unique
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  githubId  String      @unique
   username  String
   email     String?
   avatarUrl String?
   Monitor   Monitor[]
+  LogSource LogSource[]
 }
 
 model Monitor {
@@ -36,12 +37,23 @@ model Monitor {
 }
 
 model MonitorLog {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  monitorId String   @db.ObjectId
-  isUp    Boolean
-  statusCode Int
-  responseTime Int
-  region String
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  monitorId     String   @db.ObjectId
+  isUp          Boolean
+  statusCode    Int
+  responseTime  Int
+  region        String
   lastCheckedAt DateTime @default(now())
 }
 
+model LogSource {
+  id        String   @id @default(cuid()) @map("_id") @db.ObjectId
+  name      String
+  apiKey    String   @unique
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, apiKey])
+}

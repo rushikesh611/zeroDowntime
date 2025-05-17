@@ -1,9 +1,11 @@
 import {
   CreditCard,
+  Database,
   Globe,
   Logs,
   LucideIcon,
   Radio,
+  Search,
   Settings,
   ShieldAlert,
   Users
@@ -13,6 +15,7 @@ import {
     href: string;
     label: string;
     active?: boolean;
+    icon?: LucideIcon;
   };
   
   type Menu = {
@@ -70,11 +73,24 @@ import {
         groupLabel: "",
         menus: [
           {
-            href: "/home",
-            label: "Log tails",
-            active: pathname.includes("/home"),
+            href: "/logtail/sources",
+            label: "Logtail",
+            active: pathname.includes("/logtail"),
             icon: Logs,
-            submenus: []
+            submenus: [
+              {
+                href: "/logtail/sources",
+                label: "Sources",
+                active: pathname.includes("/logtail/sources"),
+                icon: Database
+              },
+              {
+                href: "/logtail/search",
+                label: "Search logs",
+                active: pathname.includes("/logtail/search"),
+                icon: Search
+              }
+            ]
           }
         ]
       },
