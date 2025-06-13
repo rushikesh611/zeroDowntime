@@ -13,6 +13,7 @@ import logRoutes from './routes/logSource'
 import { startUptimeCheck } from './jobs/uptimeCheck'
 import { logger, requestLogger } from './utils/logger'
 import { logVaultTransport } from './utils/logger'
+import statusPageRoutes from './routes/statuspage';
 
 dotenv.config()
 
@@ -45,13 +46,19 @@ app.use('/api/auth', authRoutes)
 app.use('/api', testAuthRoutes)
 app.use('/api/monitors', monitorRoutes)
 app.use('/api/log', logRoutes)
+app.use('/api/status-pages', statusPageRoutes);
 
 app.get('/', (req: any, res: any) => {
   res.send('Zero Downtime')
 })
 
+try {
 startUptimeCheck()
-logger.info('Uptime check job started')
+logger.info('uptimeCheck job started');
+}
+catch (error) {
+  logger.error('Failed to start uptimeCheck job:', error);
+}
 
 process.on('SIGTERM', async () => {
   await logVaultTransport.close();
@@ -60,14 +67,13 @@ process.on('SIGTERM', async () => {
 
 // Start the server
 app.listen(PORT, async () => {
-  logger.info(`Server running on port ${PORT}`);
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Service running on port ${PORT}`);
+  console.log(`Service running on port ${PORT}`);
   try {
+    logger.info('Connecting to MongoDB...');
     await prisma.$connect();
-    console.log('Database connected successfully');
     logger.info('Database connected successfully');
   } catch (error) {
-    console.log('Database connection failed:', error);
     logger.error('Database connection failed:', error);
     process.exit(1);
   }

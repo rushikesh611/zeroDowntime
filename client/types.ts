@@ -20,3 +20,16 @@ export interface MonitorLog {
     region: string;
     lastCheckedAt: string;
 };
+
+export interface StatusPage {
+    id: string;
+    subdomain: string;
+    title: string;
+    description: string;
+    isPublic: boolean;
+    createdAt: string;
+    monitor: {
+        url: string;
+        status: "RUNNING" | "PAUSED";
+    }
+}

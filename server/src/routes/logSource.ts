@@ -11,6 +11,7 @@ router.post('/', auth, async (req, res) => {
     const { name } = req.body;
     const userId = req.user!.id;
 
+    logger.info('createLogSource Payload:', req.body);
     const logSource = await LogSourceService.createLogSource(userId, name);
     logger.info('Log source created', { userId, sourceId: logSource.id });
 
@@ -34,6 +35,7 @@ router.get('/', auth, async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
+    logger.info('getLogSources payload', { userId });
     const sources = await LogSourceService.getLogSources(userId);
 
     res.json(sources.map(s => ({
@@ -55,10 +57,12 @@ router.delete('/:id', auth, async (req, res) => {
   const sourceId = req.params.id;
 
   if (!userId) {
+    logger.warn('Delete log source attempted without authentication', { sourceId, userId });
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
   try {
+    logger.info('deleteLogSource payload', { userId, sourceId });
     await LogSourceService.deleteLogSource(sourceId, userId);
     logger.info('Log source deleted', { userId, sourceId });
     res.status(200).json({ message: 'Log source deleted successfully' });

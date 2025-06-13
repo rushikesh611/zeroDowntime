@@ -15,7 +15,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 router.post('/', auth, async (req, res) => {
     try {
         const { url, emails, frequency, regions } = req.body;
-        logger.info('Creating monitor:', { url, emails, frequency, regions });
+        logger.info('Create monitor payload:', req.body);
         const monitor = await prisma.monitor.create({
             data: {
                 url,
@@ -40,7 +40,7 @@ router.get('/', auth, async (req, res) => {
             where: { userId: req.user?.id }
         })
         res.json(monitors);
-        logger.info('Monitors retrieved successfully:', {monitorsCount: monitors.length});
+        logger.info('Monitors retrieved successfully:', { monitorsCount: monitors.length });
     } catch (error) {
         logger.error('Error getting monitors:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -87,9 +87,12 @@ router.put('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
+
+        // The status page will be auto-deleted due to the cascading delete in prisma schema
         await prisma.monitor.delete({
             where: { id, userId: req.user?.id }
         })
+
         res.json({ message: 'Monitor deleted successfully' });
         logger.info('Monitor deleted successfully:', { monitorId: id });
     } catch (error) {
@@ -157,7 +160,7 @@ router.get('/:id/logs/hour', auth, async (req, res) => {
             where: { monitorId: id, lastCheckedAt: { gte: new Date(Date.now() - 3600000) } },
             orderBy: { lastCheckedAt: 'desc' }
         });
-        console.log(logs);  
+        console.log(logs);
         res.json(logs);
     } catch (error) {
         logger.error('Error getting monitor logs:', error);

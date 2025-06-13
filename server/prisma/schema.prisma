@@ -24,16 +24,17 @@ model User {
 }
 
 model Monitor {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  url       String
-  emails    String[]
-  frequency Int      @default(300) // in seconds
-  status    String   @default("RUNNING")
-  regions   String[]
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String   @db.ObjectId
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  url        String
+  emails     String[]
+  frequency  Int          @default(300) // in seconds
+  status     String       @default("RUNNING")
+  regions    String[]
+  user       User         @relation(fields: [userId], references: [id])
+  userId     String       @db.ObjectId
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  StatusPage StatusPage?
 }
 
 model MonitorLog {
@@ -56,4 +57,16 @@ model LogSource {
   updatedAt DateTime @updatedAt
 
   @@index([userId, apiKey])
+}
+
+model StatusPage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  monitorId   String   @db.ObjectId @unique
+  monitor     Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  subdomain   String   @unique
+  title       String
+  description String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

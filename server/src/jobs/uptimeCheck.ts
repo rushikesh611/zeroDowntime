@@ -2,6 +2,7 @@ import cron from 'node-cron'
 import { PrismaClient, Monitor, MonitorLog } from '@prisma/client'
 import { checkWebsiteUptime } from '../services/uptimeService'
 import { sendAlert } from '../services/emailService'
+import { logger } from '../utils/logger'
 
 const prisma = new PrismaClient()
 
@@ -27,10 +28,17 @@ const cache: { [key: string]: MonitorCache } = {}
 
 export function startUptimeCheck() {
     cron.schedule('*/30 * * * * *', async () => {
+        logger.info('Running uptime check job at ' + new Date().toISOString())
         const currentTime = new Date()
         const monitors = await prisma.monitor.findMany({ 
             where: { status: 'RUNNING' }
         })
+        if (monitors.length === 0) {
+            logger.info('No monitors found to check uptime')
+            return
+        } else {
+            logger.info(`Found ${monitors.length} monitors to check uptime`)
+        }
 
         await Promise.all(monitors.map(async (monitor: Monitor) => {
             const lastCheckedAt = cache[monitor.id]?.lastCheckedAt || new Date(0)
@@ -44,6 +52,7 @@ export function startUptimeCheck() {
                     await sendAlert(monitor.emails, monitor.url, results)
                 } else {
                     console.log(`Website ${monitor.url} is up. Timestamp: ${currentTime}`)
+                    logger.info(`Website ${monitor.url} is up`, { timestamp: currentTime })
                 }
 
                 // Initialize or update cache
@@ -69,6 +78,7 @@ export function startUptimeCheck() {
                     await prisma.monitorLog.createMany({
                         data: logData
                     })
+                    logger.info(`Inserted ${logData.length} logs for monitor ${monitor.id}`)
 
                     cache[monitor.id].results = []
                 }

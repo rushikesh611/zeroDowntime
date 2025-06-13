@@ -7,6 +7,7 @@ export async function sendAlert(emails: string[], url: string, results: any[]) {
     const emailSource = process.env.EMAIL_SOURCE || '';
 
     try {
+        logger.info(`emailService: Sending alert email to: ${emails.join(', ')}`);
         const { data, error } = await resend.emails.send({
             from: emailSource,
             to: emails,
@@ -15,11 +16,11 @@ export async function sendAlert(emails: string[], url: string, results: any[]) {
         })
 
         if (error) {
-            logger.error('Error sending email alert:', error);
+            logger.error('emailService: Error sending email alert:', error);
         } else {
-            logger.info(`Alert sent to ${emails.join(', ')}. Message ID: ${data?.id}`);
+            logger.info(`emailService: Alert sent to ${emails.join(', ')}. Message ID: ${data?.id}`);
         }
     } catch (error) {
-        logger.error('Error sending email alert:', error);
+        logger.error('emailService: Error sending email alert:', error);
     }
 }

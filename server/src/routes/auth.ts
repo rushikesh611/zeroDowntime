@@ -9,8 +9,16 @@ const router = express.Router();
 router.get('/github', passport.authenticate('github'));
 
 router.get('/github/callback',
-    passport.authenticate('github', { failureRedirect: '/login' }),
+    passport.authenticate('github', { 
+        failureRedirect: '/login',
+        failureMessage: true 
+    }),
     (req, res) => {
+        if (!req.user) {
+            logger.error('GitHub authentication failed - no user data');
+            return res.redirect('/login');
+        }
+
         const user = req.user as User;
         const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || '$2a$04$Ls3wM2PzVdm.08FoS3sv3uANW.EkuhFhNdSeuBNpKkXInkXumGgkm',
             { expiresIn: '1h' }
@@ -22,10 +30,14 @@ router.get('/github/callback',
             sameSite: 'strict',
             maxAge: 3600000,
         });
-        logger.info('User logged in', { userId: user.id });
+        logger.info('User logged in successfully', { 
+            userId: user.id,
+            authProvider: 'github'
+        });
 
         res.redirect('http://localhost:3000/');
-    });
+    }
+);
 
     
 
