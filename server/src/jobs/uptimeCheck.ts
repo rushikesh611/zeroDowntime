@@ -49,6 +49,7 @@ export function startUptimeCheck() {
 
                 if (isDown) {
                     console.log(`Website ${monitor.url} is down`)
+                    logger.warn(`Website ${monitor.url} is down`, { timestamp: currentTime, results })
                     await sendAlert(monitor.emails, monitor.url, results)
                 } else {
                     console.log(`Website ${monitor.url} is up. Timestamp: ${currentTime}`)

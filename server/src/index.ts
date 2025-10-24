@@ -73,8 +73,8 @@ app.listen(PORT, async () => {
     logger.info('Connecting to MongoDB...');
     await prisma.$connect();
     logger.info('Database connected successfully');
-  } catch (error) {
-    logger.error('Database connection failed:', error);
+  } catch (error: any) {
+    logger.error('Database connection failed:', error.message);
     process.exit(1);
   }
 });

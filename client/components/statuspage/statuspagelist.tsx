@@ -43,7 +43,7 @@ const StatusPageList = () => {
     const handleRefresh = () => {
       fetchStatusPages();
     };
-    
+
     const element = document.getElementById('status-page-list');
     if (element) {
       element.addEventListener('refresh', handleRefresh);
@@ -66,16 +66,16 @@ const StatusPageList = () => {
       const response = await fetch(`/api/status-pages/${id}`, {
         method: "DELETE",
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to delete status page");
       }
-      
+
       toast({
         title: "Status page deleted",
         description: "The status page has been successfully deleted",
       });
-      
+
       fetchStatusPages();
     } catch (error) {
       console.error("Error deleting status page:", error);
@@ -154,17 +154,17 @@ const StatusPageList = () => {
                 Copy URL
               </Button>
               <Button size="sm" variant="outline" asChild>
-  <a 
-    href={`/status-preview/${page.subdomain}`} 
-    target="_blank" 
-    rel="noopener noreferrer"
-  >
-    <ExternalLink className="h-4 w-4 mr-1" />
-    View
-  </a>
-</Button>
+                <a
+                  href={`/status-preview/${page.subdomain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  View
+                </a>
+              </Button>
             </div>
-            
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button size="sm" variant="outline" className="text-destructive border-destructive">
@@ -181,7 +181,7 @@ const StatusPageList = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
+                  <AlertDialogAction
                     onClick={() => handleDelete(page.id)}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >

@@ -42,14 +42,14 @@ export default function DashboardLayout({
         {children}
       </main>
       <Toaster/>
-      <footer
+      {/* <footer
         className={cn(
           "transition-[margin-left] ease-in-out duration-300",
           sidebar?.isSidebarOpen === false ? "lg:ml-[90px]" : "lg:ml-72"
         )}
       >
         <Footer />
-      </footer>
+      </footer> */}
     </>
   );
 }
