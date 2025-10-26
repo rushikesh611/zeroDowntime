@@ -39,6 +39,7 @@ export const useAppStore = create<AppStore>()(
       user: null,
       isLoading: true,
       login: () => {
+        set({ isLoading: true });
         window.location.href = '/api/auth/github';
       },
       logout: async () => {
