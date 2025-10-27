@@ -1,23 +1,34 @@
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { logger } from '../utils/logger';
 
+interface MonitorCheckParams {
+    url: string;
+    type: 'http';
+    method: string;
+    headers?: Record<string, string>;
+    body?: string;
+}
 
-export async function checkWebsiteUptime(url: string, regions: string[]) {
-    logger.info('Starting uptime check', {
-        url,
+export async function checkEndpoint(params: MonitorCheckParams, regions: string[]) {
+    logger.info('Starting HTTP check', {
+        url: params.url,
+        method: params.method,
         regions,
-        action: 'UPTIME_CHECK_START'
+        action: 'HTTP_CHECK_START'
     });
-    const results = await Promise.all(regions.map(region => checkFromRegion(url, region)));
-    logger.info('Completed uptime check', {
-        url,
+
+    const results = await Promise.all(regions.map(region => checkFromRegion(params, region)));
+
+    logger.info('Completed HTTP check', {
+        url: params.url,
         results,
-        action: 'UPTIME_CHECK_COMPLETE'
+        action: 'HTTP_CHECK_COMPLETE'
     });
+
     return results;
 }
 
-async function checkFromRegion(url: string, region: string) {
+async function checkFromRegion(params: MonitorCheckParams, region: string) {
     const lambda = new LambdaClient({
         region,
         credentials: {
@@ -26,17 +37,22 @@ async function checkFromRegion(url: string, region: string) {
         }
     });
 
-    const params = {
-        FunctionName: 'checkWebsiteUptime',
-        Payload: Buffer.from(JSON.stringify({ url }))
+    // We now use a single Lambda function for all HTTP monitoring
+    const functionName = 'checkEndpoint';
+    const lambdaParams = {
+        FunctionName: functionName,
+        Payload: Buffer.from(JSON.stringify(params))
     };
 
     try {
-        logger.info('Invoking lambda function', {
+        logger.info(`Invoking lambda function for ${params.type} check`, {
             region,
+            url: params.url,
+            method: params.method,
             action: 'LAMBDA_INVOKE_START'
         });
-        const command = new InvokeCommand(params);
+
+        const command = new InvokeCommand(lambdaParams);
         const response = await lambda.send(command);
         
         // Convert Uint8Array to string and parse JSON
@@ -53,12 +69,12 @@ async function checkFromRegion(url: string, region: string) {
         });
         
         return { region, ...result };
-    } catch (error : any) {
+    } catch (error: any) {
         logger.error('Lambda function failed', {
             region,
             error: error.message || 'Unknown error',
             action: 'LAMBDA_INVOKE_ERROR'
         });
-        return { region, error: 'Failed to check uptime' };
+        return { region, error: `Failed to check ${params.type} endpoint` };
     }
 }

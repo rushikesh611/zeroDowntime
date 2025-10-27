@@ -5,6 +5,7 @@ import passport from './config/passport'
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import { PrismaClient } from '@prisma/client'
+import helmet from 'helmet'
 
 import authRoutes from './routes/auth'
 import testAuthRoutes from './routes/testAuth'
@@ -28,7 +29,11 @@ const corsOptions = {
   optionSuccessStatus: 200
 }
 
+app.disable('x-powered-by')
+
+
 // Middleware
+app.use(helmet())
 app.use(cors(corsOptions));
 app.use(cookieParser())
 app.use(express.json())
@@ -53,8 +58,8 @@ app.get('/', (req: any, res: any) => {
 })
 
 try {
-startUptimeCheck()
-logger.info('uptimeCheck job started');
+  startUptimeCheck()
+  logger.info('uptimeCheck job started');
 }
 catch (error) {
   logger.error('Failed to start uptimeCheck job:', error);
