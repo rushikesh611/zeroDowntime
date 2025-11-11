@@ -4,7 +4,7 @@ import { URL } from 'url';
 
 interface Assertion {
     type: 'status' | 'header' | 'body';
-    condition: 'equals' | 'contains' | 'matches' | 'greaterThan' | 'lessThan';
+    condition: 'equals' | 'notEquals' | 'contains' | 'notContains' | 'matches' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
     value: string | number;
     property?: string; // For header assertions
 }
@@ -50,6 +50,11 @@ function validateAssertion(
                         passed: response.statusCode === Number(assertion.value),
                         message: `Status ${response.statusCode} equals ${assertion.value}`
                     };
+                case 'notEquals':
+                    return {
+                        passed: response.statusCode !== Number(assertion.value),
+                        message: `Status ${response.statusCode} not equals ${assertion.value}`
+                    };
                 case 'greaterThan':
                     return {
                         passed: response.statusCode > Number(assertion.value),
@@ -59,6 +64,16 @@ function validateAssertion(
                     return {
                         passed: response.statusCode < Number(assertion.value),
                         message: `Status ${response.statusCode} less than ${assertion.value}`
+                    };
+                case 'greaterThanOrEqual':
+                    return {
+                        passed: response.statusCode >= Number(assertion.value),
+                        message: `Status ${response.statusCode} greater than or equal to ${assertion.value}`
+                    };
+                case 'lessThanOrEqual':
+                    return {
+                        passed: response.statusCode <= Number(assertion.value),
+                        message: `Status ${response.statusCode} less than or equal to ${assertion.value}`
                     };
                 default:
                     return { passed: false, message: 'Invalid status condition' };
@@ -80,10 +95,20 @@ function validateAssertion(
                         passed: headerStr === String(assertion.value),
                         message: `Header ${assertion.property} equals ${assertion.value}`
                     };
+                case 'notEquals':
+                    return {
+                        passed: headerStr !== String(assertion.value),
+                        message: `Header ${assertion.property} not equals ${assertion.value}`
+                    };
                 case 'contains':
                     return {
                         passed: headerStr.includes(String(assertion.value)),
                         message: `Header ${assertion.property} contains ${assertion.value}`
+                    };
+                case 'notContains':
+                    return {
+                        passed: !headerStr.includes(String(assertion.value)),
+                        message: `Header ${assertion.property} does not contain ${assertion.value}`
                     };
                 case 'matches':
                     try {
@@ -105,6 +130,21 @@ function validateAssertion(
                     return {
                         passed: response.body.includes(String(assertion.value)),
                         message: `Body contains ${assertion.value}`
+                    };
+                case 'notContains':
+                    return {
+                        passed: !response.body.includes(String(assertion.value)),
+                        message: `Body does not contain ${assertion.value}`
+                    };
+                case 'equals':
+                    return {
+                        passed: response.body === String(assertion.value),
+                        message: `Body equals ${assertion.value}`
+                    };
+                case 'notEquals':
+                    return {
+                        passed: response.body !== String(assertion.value),
+                        message: `Body not equals ${assertion.value}`
                     };
                 case 'matches':
                     try {
@@ -155,9 +195,13 @@ export const handler = async (event: MonitorCheckEvent): Promise<MonitorResponse
                 const responseTime = endTime - startTime;
                 let responseBody = '';
 
-                // Always capture response for assertion checking
+                // Only capture response body if assertions are present or response status is not 2xx
+                const shouldCaptureBody = event.assertions && event.assertions.length > 0;
+
                 res.on('data', (chunk) => {
-                    if (responseBody.length < 1000) responseBody += chunk.toString();
+                    if (shouldCaptureBody && responseBody.length < 1000) {
+                        responseBody += chunk.toString();
+                    }
                 });
 
                 res.on('end', () => {
@@ -184,7 +228,7 @@ export const handler = async (event: MonitorCheckEvent): Promise<MonitorResponse
                         headers: Object.fromEntries(
                             Object.entries(res.headers).map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : String(v || '')])
                         ),
-                        body: responseBody,
+                        body: shouldCaptureBody ? responseBody : undefined,
                         assertions: assertionResults
                     });
                 });

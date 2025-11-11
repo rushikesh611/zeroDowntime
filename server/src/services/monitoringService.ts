@@ -16,6 +16,7 @@ export async function checkEndpoint(params: MonitorCheckParams, regions: string[
         regions,
         action: 'HTTP_CHECK_START'
     });
+    console.log('Checking endpoint:', params.url, 'in regions:', regions);
 
     const results = await Promise.all(regions.map(region => checkFromRegion(params, region)));
 
@@ -38,7 +39,7 @@ async function checkFromRegion(params: MonitorCheckParams, region: string) {
     });
 
     // We now use a single Lambda function for all HTTP monitoring
-    const functionName = 'checkEndpoint';
+    const functionName = 'checkWebsiteUptime';
     const lambdaParams = {
         FunctionName: functionName,
         Payload: Buffer.from(JSON.stringify(params))

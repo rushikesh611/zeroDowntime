@@ -4,7 +4,7 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 
 
 // Assertion Types
 export type AssertionType = 'status' | 'header' | 'body';
-export type AssertionCondition = 'equals' | 'contains' | 'matches' | 'greaterThan' | 'lessThan';
+export type AssertionCondition = 'equals' | 'notEquals' | 'contains' | 'notContains' | 'matches' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
 
 export interface Assertion {
   type: AssertionType;
