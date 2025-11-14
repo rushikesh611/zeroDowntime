@@ -1,29 +1,50 @@
-import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import express from 'express';
 import auth from '../middleware/auth';
 
-import { checkWebsiteUptime } from '../services/uptimeService';
+import { Resend } from 'resend';
+import { checkEndpoint } from '../services/monitoringService';
 import { logger } from '../utils/logger';
-import { Resend } from 'resend'
 
 
 const prisma = new PrismaClient();
 const router = express.Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+import { MonitorInput } from '../types/monitor';
+
 // Create monitor
 router.post('/', auth, async (req, res) => {
     try {
-        const { url, emails, frequency, regions } = req.body;
-        logger.info('Creating monitor:', { url, emails, frequency, regions });
-        const monitor = await prisma.monitor.create({
-            data: {
-                url,
-                emails,
-                frequency: frequency || 600,
-                userId: req.user!.id,
-                regions
+        const monitorData: MonitorInput = req.body;
+        logger.info('Create monitor payload:', monitorData);
+
+        console.log('Received monitor data:', monitorData);
+        // Prepare monitor data based on type
+        const baseMonitorData = {
+            url: monitorData.url,
+            monitorType: monitorData.monitorType,
+            emails: monitorData.emails,
+            frequency: monitorData.frequency,
+            userId: req.user!.id,
+            regions: monitorData.regions
+        };
+
+        console.log('Base monitor data:', baseMonitorData);
+
+        // Add HTTP-specific fields only if monitorType is http
+        const monitorCreateData = monitorData.monitorType === 'http' 
+            ? {
+                ...baseMonitorData,
+                method: monitorData.method,
+                headers: monitorData.headers,
+                body: monitorData.body,
+                assertions: monitorData.assertions ? JSON.parse(JSON.stringify(monitorData.assertions)) : undefined,
             }
+            : baseMonitorData;
+
+        const monitor = await prisma.monitor.create({
+            data: monitorCreateData
         })
         res.status(201).json(monitor);
         logger.info('Monitor created successfully:', { monitorId: monitor.id });
@@ -40,7 +61,7 @@ router.get('/', auth, async (req, res) => {
             where: { userId: req.user?.id }
         })
         res.json(monitors);
-        logger.info('Monitors retrieved successfully:', {monitorsCount: monitors.length});
+        logger.info('Monitors retrieved successfully:', { monitorsCount: monitors.length });
     } catch (error) {
         logger.error('Error getting monitors:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -69,11 +90,26 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { url, emails, frequency, status, regions } = req.body;
+        const { url, monitorType, method, headers, body, emails, frequency, status, regions, assertions } = req.body;
+
+        const monitorData = {
+            url,
+            monitorType,
+            method,
+            headers: headers || {},
+            body: body || null,
+            emails,
+            frequency,
+            status,
+            regions,
+            assertions: assertions ? JSON.parse(JSON.stringify(assertions)) : undefined,
+        };
+
         const updatedMonitor = await prisma.monitor.update({
             where: { id, userId: req.user?.id },
-            data: { url, emails, frequency, status, regions }
-        })
+            data: monitorData
+        });
+
         res.json(updatedMonitor);
         logger.info('Monitor updated successfully:', { monitorId: updatedMonitor.id });
     } catch (error) {
@@ -87,9 +123,12 @@ router.put('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
+
+        // The status page will be auto-deleted due to the cascading delete in prisma schema
         await prisma.monitor.delete({
             where: { id, userId: req.user?.id }
         })
+
         res.json({ message: 'Monitor deleted successfully' });
         logger.info('Monitor deleted successfully:', { monitorId: id });
     } catch (error) {
@@ -109,8 +148,27 @@ router.post('/:id/check', auth, async (req, res) => {
             logger.info('Monitor not found:', { monitorId: id });
             return res.status(404).json({ error: 'Monitor not found' });
         }
-        const uptimeResults = await checkWebsiteUptime(monitor.url, monitor.regions);
-        res.json(uptimeResults);
+
+        // Ensure the monitor is HTTP type
+        if (monitor.monitorType !== 'http') {
+            return res.status(400).json({ error: 'Only HTTP monitors can be checked manually' });
+        }
+
+        if (!monitor.method) {
+            return res.status(400).json({ error: 'HTTP method is required' });
+        }
+
+        // Prepare check parameters for HTTP monitor
+        const monitorResults = await checkEndpoint({
+            url: monitor.url,
+            type: 'http',
+            method: monitor.method,
+            headers: monitor.headers as Record<string, string> | undefined,
+            body: monitor.body || undefined,
+            assertions: monitor.assertions as any[] | undefined  // ADD THIS LINE
+        }, monitor.regions);
+
+        res.json(monitorResults);
         logger.info('Uptime check completed successfully:', { monitorId: id });
     } catch (error) {
         logger.error('Error checking uptime:', error);
@@ -157,7 +215,7 @@ router.get('/:id/logs/hour', auth, async (req, res) => {
             where: { monitorId: id, lastCheckedAt: { gte: new Date(Date.now() - 3600000) } },
             orderBy: { lastCheckedAt: 'desc' }
         });
-        console.log(logs);  
+        console.log(logs);
         res.json(logs);
     } catch (error) {
         logger.error('Error getting monitor logs:', error);

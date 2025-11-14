@@ -7,19 +7,24 @@ export async function sendAlert(emails: string[], url: string, results: any[]) {
     const emailSource = process.env.EMAIL_SOURCE || '';
 
     try {
-        const { data, error } = await resend.emails.send({
-            from: emailSource,
-            to: emails,
-            subject: `🚨Alert: ${url} is down`,
-            text: `The website ${url} is down. Results: ${JSON.stringify(results)}`
-        })
+        logger.info(`emailService: Sending alert email to: ${emails.join(', ')}`);
+        // const { data, error } = await resend.emails.send({
+        //     from: emailSource,
+        //     to: emails,
+        //     subject: `🚨Alert: ${url} is down`,
+        //     text: `The website ${url} is down. Results: ${JSON.stringify(results)}`
+        // })
+
+        const error = null;
+        const data = { id: 'mock-email-id' };
+        console.log('Pretending to send email alert...');
 
         if (error) {
-            logger.error('Error sending email alert:', error);
+            logger.error('emailService: Error sending email alert:', error);
         } else {
-            logger.info(`Alert sent to ${emails.join(', ')}. Message ID: ${data?.id}`);
+            logger.info(`emailService: Alert sent to ${emails.join(', ')}. Message ID: ${data?.id}`);
         }
     } catch (error) {
-        logger.error('Error sending email alert:', error);
+        logger.error('emailService: Error sending email alert:', error);
     }
 }

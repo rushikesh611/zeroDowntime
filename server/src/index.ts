@@ -5,6 +5,7 @@ import passport from './config/passport'
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import { PrismaClient } from '@prisma/client'
+import helmet from 'helmet'
 
 import authRoutes from './routes/auth'
 import testAuthRoutes from './routes/testAuth'
@@ -13,6 +14,7 @@ import logRoutes from './routes/logSource'
 import { startUptimeCheck } from './jobs/uptimeCheck'
 import { logger, requestLogger } from './utils/logger'
 import { logVaultTransport } from './utils/logger'
+import statusPageRoutes from './routes/statuspage';
 
 dotenv.config()
 
@@ -27,7 +29,11 @@ const corsOptions = {
   optionSuccessStatus: 200
 }
 
+app.disable('x-powered-by')
+
+
 // Middleware
+app.use(helmet())
 app.use(cors(corsOptions));
 app.use(cookieParser())
 app.use(express.json())
@@ -45,13 +51,19 @@ app.use('/api/auth', authRoutes)
 app.use('/api', testAuthRoutes)
 app.use('/api/monitors', monitorRoutes)
 app.use('/api/log', logRoutes)
+app.use('/api/status-pages', statusPageRoutes);
 
 app.get('/', (req: any, res: any) => {
   res.send('Zero Downtime')
 })
 
-startUptimeCheck()
-logger.info('Uptime check job started')
+try {
+  startUptimeCheck()
+  logger.info('uptimeCheck job started');
+}
+catch (error) {
+  logger.error('Failed to start uptimeCheck job:', error);
+}
 
 process.on('SIGTERM', async () => {
   await logVaultTransport.close();
@@ -60,15 +72,14 @@ process.on('SIGTERM', async () => {
 
 // Start the server
 app.listen(PORT, async () => {
-  logger.info(`Server running on port ${PORT}`);
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Service running on port ${PORT}`);
+  console.log(`Service running on port ${PORT}`);
   try {
+    logger.info('Connecting to MongoDB...');
     await prisma.$connect();
-    console.log('Database connected successfully');
     logger.info('Database connected successfully');
-  } catch (error) {
-    console.log('Database connection failed:', error);
-    logger.error('Database connection failed:', error);
+  } catch (error: any) {
+    logger.error('Database connection failed:', error.message);
     process.exit(1);
   }
 });
