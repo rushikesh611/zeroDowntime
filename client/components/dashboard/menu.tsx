@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Ellipsis, LogOut } from "lucide-react";
+import { Ellipsis, LogOut, Users, CreditCard, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
@@ -24,16 +24,20 @@ interface MenuProps {
 export function Menu({ isOpen }: MenuProps) {
   const pathname = usePathname();
   const menuList = getMenuList(pathname);
-  const { logout } = useAppStore()
+  const { logout } = useAppStore();
+
+  // Separate main navigation from settings
+  const mainMenus = menuList.filter(group => group.groupLabel !== "Settings");
+  const settingsMenus = menuList.find(group => group.groupLabel === "Settings");
 
   return (
-    <ScrollArea className="[&>div>div[style]]:!block">
-      <nav className="mt-8 w-full">
-        <ul className="flex flex-col min-h-[calc(100vh-48px-36px-16px-32px)] lg:min-h-[calc(100vh-32px-40px-32px)] items-start space-y-1 px-2">
-          {menuList.map(({ groupLabel, menus }, index) => (
+    <nav className="mt-6 w-full h-full flex flex-col">
+      <div className="flex-1 px-2">
+        <ul className="flex flex-col items-start space-y-1">
+          {mainMenus.map(({ groupLabel, menus }, index) => (
             <li className={cn("w-full", groupLabel ? "pt-5" : "")} key={index}>
               {(isOpen && groupLabel) || isOpen === undefined ? (
-                <p className="text-sm font-medium text-muted-foreground px-4 pb-2 max-w-[248px] truncate">
+                <p className="text-xs font-semibold text-muted-foreground px-4 pb-2 max-w-[248px] truncate uppercase tracking-wider">
                   {groupLabel}
                 </p>
               ) : !isOpen && isOpen !== undefined && groupLabel ? (
@@ -61,18 +65,26 @@ export function Menu({ isOpen }: MenuProps) {
                           <TooltipTrigger asChild>
                             <Button
                               variant={active ? "secondary" : "ghost"}
-                              className="w-full justify-start h-10 mb-1"
+                              className={cn(
+                                "w-full justify-start h-11 mb-1 transition-all duration-200",
+                                active 
+                                  ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" 
+                                  : "hover:bg-accent hover:translate-x-1"
+                              )}
                               asChild
                             >
                               <Link href={href}>
                                 <span
-                                  className={cn(isOpen === false ? "" : "mr-4")}
+                                  className={cn(
+                                    "flex items-center justify-center",
+                                    isOpen === false ? "" : "mr-3"
+                                  )}
                                 >
-                                  <Icon size={18} />
+                                  <Icon size={20} strokeWidth={active ? 2.5 : 2} />
                                 </span>
                                 <p
                                   className={cn(
-                                    "max-w-[200px] truncate",
+                                    "font-medium text-sm transition-all duration-300",
                                     isOpen === false
                                       ? "-translate-x-96 opacity-0"
                                       : "translate-x-0 opacity-100"
@@ -84,7 +96,7 @@ export function Menu({ isOpen }: MenuProps) {
                             </Button>
                           </TooltipTrigger>
                           {isOpen === false && (
-                            <TooltipContent side="right">
+                            <TooltipContent side="right" className="font-medium">
                               {label}
                             </TooltipContent>
                           )}
@@ -105,36 +117,79 @@ export function Menu({ isOpen }: MenuProps) {
               )}
             </li>
           ))}
-          <li className="w-full grow flex items-end">
-            <TooltipProvider disableHoverableContent>
-              <Tooltip delayDuration={100}>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={logout}
-                    variant="outline"
-                    className="w-full justify-center h-10 mt-5"
-                  >
-                    <span className={cn(isOpen === false ? "" : "mr-4")}>
-                      <LogOut size={18} />
+        </ul>
+      </div>
+
+      {/* Bottom Section - Settings */}
+      <div className="mt-auto border-t pt-4 px-2 space-y-1">
+        {settingsMenus?.menus.map(({ href, label, icon: Icon, active }, index) => (
+          <TooltipProvider disableHoverableContent key={index}>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={active ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start h-11 transition-all duration-200",
+                    active 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" 
+                      : "hover:bg-accent hover:translate-x-1"
+                  )}
+                  asChild
+                >
+                  <Link href={href}>
+                    <span className={cn("flex items-center justify-center", isOpen === false ? "" : "mr-3")}>
+                      <Icon size={20} strokeWidth={active ? 2.5 : 2} />
                     </span>
                     <p
                       className={cn(
-                        "whitespace-nowrap",
-                        isOpen === false ? "opacity-0 hidden" : "opacity-100"
+                        "font-medium text-sm transition-all duration-300",
+                        isOpen === false ? "-translate-x-96 opacity-0" : "translate-x-0 opacity-100"
                       )}
                     >
-                      Sign out
+                      {label}
                     </p>
-                  </Button>
-                </TooltipTrigger>
-                {isOpen === false && (
-                  <TooltipContent side="right">Sign out</TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          </li>
-        </ul>
-      </nav>
-    </ScrollArea>
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              {isOpen === false && (
+                <TooltipContent side="right" className="font-medium">
+                  {label}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        ))}
+
+        {/* Sign Out */}
+        <TooltipProvider disableHoverableContent>
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={logout}
+                variant="ghost"
+                className="w-full justify-start h-11 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all duration-200"
+              >
+                <span className={cn("flex items-center justify-center", isOpen === false ? "" : "mr-3")}>
+                  <LogOut size={20} />
+                </span>
+                <p
+                  className={cn(
+                    "font-medium text-sm transition-all duration-300",
+                    isOpen === false ? "opacity-0 hidden" : "opacity-100"
+                  )}
+                >
+                  Sign out
+                </p>
+              </Button>
+            </TooltipTrigger>
+            {isOpen === false && (
+              <TooltipContent side="right" className="font-medium">
+                Sign out
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </nav>
   );
 }

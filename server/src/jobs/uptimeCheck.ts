@@ -49,7 +49,8 @@ export function startUptimeCheck() {
                     type: 'http',
                     method: monitor.method,
                     headers: monitor.headers as Record<string, string> | undefined,
-                    body: monitor.body || undefined
+                    body: monitor.body || undefined,
+                    assertions: monitor.assertions as any[] | undefined 
                 }, monitor.regions)
                 const isDown = results.some(result => !result.isUp)
 

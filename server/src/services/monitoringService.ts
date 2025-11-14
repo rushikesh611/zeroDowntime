@@ -7,9 +7,11 @@ interface MonitorCheckParams {
     method: string;
     headers?: Record<string, string>;
     body?: string;
+    assertions?: any[];
 }
 
 export async function checkEndpoint(params: MonitorCheckParams, regions: string[]) {
+    console.log(params)
     logger.info('Starting HTTP check', {
         url: params.url,
         method: params.method,

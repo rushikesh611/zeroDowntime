@@ -8,6 +8,11 @@ export interface Monitor {
     userId: string;
     createdAt: string;
     updatedAt: string;
+    method: string;
+    headers?: Record<string, string>;
+    body?: string;
+    assertions?: any[];
+    monitorType: "string";
 }
 
 

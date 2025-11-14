@@ -18,6 +18,8 @@ router.post('/', auth, async (req, res) => {
     try {
         const monitorData: MonitorInput = req.body;
         logger.info('Create monitor payload:', monitorData);
+
+        console.log('Received monitor data:', monitorData);
         // Prepare monitor data based on type
         const baseMonitorData = {
             url: monitorData.url,
@@ -27,6 +29,8 @@ router.post('/', auth, async (req, res) => {
             userId: req.user!.id,
             regions: monitorData.regions
         };
+
+        console.log('Base monitor data:', baseMonitorData);
 
         // Add HTTP-specific fields only if monitorType is http
         const monitorCreateData = monitorData.monitorType === 'http' 
@@ -86,17 +90,7 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { url, monitorType, method, headers, body, emails, frequency, status, regions } = req.body;
-
-        // Validate monitor type
-        if (monitorType !== 'http') {
-            return res.status(400).json({ error: 'Invalid monitor type. Only HTTP monitoring is supported.' });
-        }
-
-        // Validate required fields
-        if (!method) {
-            return res.status(400).json({ error: 'Method is required for HTTP monitors' });
-        }
+        const { url, monitorType, method, headers, body, emails, frequency, status, regions, assertions } = req.body;
 
         const monitorData = {
             url,
@@ -107,7 +101,8 @@ router.put('/:id', auth, async (req, res) => {
             emails,
             frequency,
             status,
-            regions
+            regions,
+            assertions: assertions ? JSON.parse(JSON.stringify(assertions)) : undefined,
         };
 
         const updatedMonitor = await prisma.monitor.update({
@@ -169,7 +164,8 @@ router.post('/:id/check', auth, async (req, res) => {
             type: 'http',
             method: monitor.method,
             headers: monitor.headers as Record<string, string> | undefined,
-            body: monitor.body || undefined
+            body: monitor.body || undefined,
+            assertions: monitor.assertions as any[] | undefined  // ADD THIS LINE
         }, monitor.regions);
 
         res.json(monitorResults);

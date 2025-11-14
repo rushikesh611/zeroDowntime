@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MonitorLog } from "@/types";
+import { Activity, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
     CartesianGrid,
@@ -13,7 +13,6 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-
 
 type TimeRange = "1h" | "6h" | "24h";
 
@@ -49,9 +48,9 @@ interface CustomTooltipProps extends TooltipProps<number, string> {
 
 const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ data = [] }) => {
     const timeRanges: TimeRanges = {
-        "1h": "Last 1 Hour",
-        "6h": "Last 6 Hours",
-        "24h": "Last 24 Hours"
+        "1h": "1H",
+        "6h": "6H",
+        "24h": "24H"
     };
 
     const [selectedRange, setSelectedRange] = useState<TimeRange>("1h");
@@ -65,9 +64,9 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
     }, []);
 
     const regionColors: RegionColors = {
-        'us-east-1': '#8884d8',
-        'eu-west-1': '#82ca9d',
-        'ap-south-1': '#ffc658'
+        'us-east-1': 'hsl(var(--chart-1))',
+        'eu-west-1': 'hsl(var(--chart-2))',
+        'ap-south-1': 'hsl(var(--chart-3))'
     };
 
     const processedData = useMemo((): ProcessedDataPoint[] => {
@@ -122,6 +121,24 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
         return timeseriesData;
     }, [data, selectedRange, currentTime]);
 
+    const uptime = useMemo(() => {
+        if (!processedData.length) return 0;
+
+        let totalChecks = 0;
+        let upChecks = 0;
+
+        processedData.forEach(point => {
+            Object.keys(regionColors).forEach(region => {
+                if (point[region] !== null) {
+                    totalChecks++;
+                    if (point[region] === 1) upChecks++;
+                }
+            });
+        });
+
+        return totalChecks > 0 ? ((upChecks / totalChecks) * 100).toFixed(1) : 0;
+    }, [processedData, regionColors]);
+
     const formatXAxis = (timestamp: number): string => {
         const date = new Date(timestamp);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -142,17 +159,33 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
     const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="rounded-lg border bg-background p-2 shadow-sm">
-                    <div className="text-sm font-medium text-foreground">
-                        {label ? new Date(label).toLocaleString() : ''}
+                <div className="rounded-lg border bg-background/95 backdrop-blur-sm p-3 shadow-lg animate-in fade-in-0 zoom-in-95">
+                    <div className="text-xs font-medium text-muted-foreground mb-2">
+                        {label ? new Date(label).toLocaleString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            day: 'numeric',
+                            month: 'short'
+                        }) : ''}
                     </div>
-                    {payload.map((entry, index) => (
-                        entry.value !== null && (
-                            <div key={index} className="text-sm">
-                                <span style={{ color: entry.color }}>{entry.name}</span>: {entry.value === 1 ? 'Up' : 'Down'}
-                            </div>
-                        )
-                    ))}
+                    <div className="space-y-1">
+                        {payload.map((entry, index) => (
+                            entry.value !== null && (
+                                <div key={index} className="flex items-center justify-between gap-4 text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className="w-2 h-2 rounded-full"
+                                            style={{ backgroundColor: entry.color }}
+                                        />
+                                        <span className="font-medium">{entry.name}</span>
+                                    </div>
+                                    <span className={entry.value === 1 ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-red-600 dark:text-red-400 font-semibold'}>
+                                        {entry.value === 1 ? 'Up' : 'Down'}
+                                    </span>
+                                </div>
+                            )
+                        ))}
+                    </div>
                 </div>
             );
         }
@@ -161,48 +194,60 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
 
     if (!Array.isArray(data) || data.length === 0) {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Availability by Region</CardTitle>
-                </CardHeader>
-                <CardContent className="h-96 flex items-center justify-center">
-                    <p className="text-muted-foreground">No data available</p>
-                </CardContent>
-            </Card>
+            <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                <div className="p-4 sm:p-6 pt-0">
+                    <div className="h-64 sm:h-80 flex flex-col items-center justify-center text-center">
+                        <div className="rounded-full bg-muted p-3 mb-3">
+                            <Activity className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">No availability data yet</p>
+                        <p className="text-xs text-muted-foreground mt-1">Data will appear once monitoring begins</p>
+                    </div>
+                </div>
+            </div>
         );
     }
 
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Availability by Region</CardTitle>
-                <Select
-                    value={selectedRange}
-                    onValueChange={(value: TimeRange) => setSelectedRange(value)}
-                >
-                    <SelectTrigger className="w-36">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {Object.entries(timeRanges).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                                {label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </CardHeader>
-            <CardContent>
-                <div className="h-60 w-full">
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md">
+            <div className="flex flex-col space-y-1.5 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                            <TrendingUp className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                            <span className="font-semibold text-green-600 dark:text-green-400">{uptime}%</span>
+                            <span>uptime in selected period</span>
+                        </div>
+                    </div>
+                    <Select
+                        value={selectedRange}
+                        onValueChange={(value: TimeRange) => setSelectedRange(value)}
+                    >
+                        <SelectTrigger className="w-full sm:w-28 h-9">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Object.entries(timeRanges).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <div className="p-4 sm:p-6 pt-0">
+                <div className="h-64 sm:h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                             data={processedData}
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
                         >
                             <CartesianGrid
                                 strokeDasharray="3 3"
                                 className="stroke-muted"
-                                opacity={0.4}
+                                opacity={0.3}
+                                vertical={false}
                             />
                             <XAxis
                                 dataKey="timestamp"
@@ -212,27 +257,29 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
                                 tickFormatter={formatXAxis}
                                 interval="preserveStartEnd"
                                 stroke="hsl(var(--muted-foreground))"
-                                tick={{ fill: "hsl(var(--muted-foreground))" }}
+                                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                                tickLine={false}
+                                axisLine={{ stroke: "hsl(var(--border))" }}
                             />
                             <YAxis
                                 type="number"
                                 domain={[0, 1]}
                                 tickFormatter={formatYAxis}
                                 ticks={[0, 1]}
-                                label={{
-                                    value: 'Status',
-                                    angle: -90,
-                                    position: 'insideLeft',
-                                    style: { fill: "hsl(var(--muted-foreground))" }
-                                }}
                                 stroke="hsl(var(--muted-foreground))"
-                                tick={{ fill: "hsl(var(--muted-foreground))" }}
+                                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                                tickLine={false}
+                                axisLine={{ stroke: "hsl(var(--border))" }}
+                                width={45}
                             />
-                            <Tooltip content={<CustomTooltip />} />
+                            <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3' }} />
                             <Legend
                                 wrapperStyle={{
-                                    paddingTop: "20px",
+                                    paddingTop: "16px",
+                                    fontSize: "13px"
                                 }}
+                                iconType="circle"
+                                iconSize={8}
                             />
                             {Object.keys(regionColors).map((region) => (
                                 <Line
@@ -242,16 +289,21 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
                                     name={region}
                                     stroke={regionColors[region]}
                                     dot={false}
-                                    activeDot={{ r: 4 }}
+                                    activeDot={{
+                                        r: 5,
+                                        strokeWidth: 2,
+                                        className: "animate-pulse"
+                                    }}
                                     connectNulls={true}
-                                    strokeWidth={2}
+                                    strokeWidth={2.5}
+                                    className="transition-all duration-300"
                                 />
                             ))}
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 };
 
