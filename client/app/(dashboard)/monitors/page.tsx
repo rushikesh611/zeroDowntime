@@ -58,7 +58,7 @@ const MonitorsPage = () => {
   }
 
   return (
-    <ContentLayout title="Monitors">
+    <ContentLayout>
       <div className="space-y-6 animate-in fade-in-50 duration-500">
         {/* Header Section */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -73,7 +73,7 @@ const MonitorsPage = () => {
           <Button
             onClick={handleCreateMonitor}
             size="lg"
-            className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow"
+            className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow rounded-sm"
           >
             <Plus className="mr-2 h-4 w-4" />
             Create Monitor
@@ -174,8 +174,8 @@ const MonitorsPage = () => {
                             </p>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                               <span className={`font-medium px-2 py-0.5 rounded-full ${monitor.status === 'PAUSED'
-                                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
-                                  : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
                                 }`}>
                                 {monitor.status}
                               </span>

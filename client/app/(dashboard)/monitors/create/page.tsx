@@ -157,7 +157,7 @@ const Page = () => {
   }
 
   return (
-    <ContentLayout title='Create Monitor'>
+    <ContentLayout>
       <div className="mx-auto max-w-2xl py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Create Monitor</h1>
