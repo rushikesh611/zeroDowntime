@@ -93,3 +93,6 @@ test.db
 
 # Vercel
 .vercel
+
+# Terraform Lambda file
+*.zip

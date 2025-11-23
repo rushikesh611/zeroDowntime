@@ -41,7 +41,7 @@ async function checkFromRegion(params: MonitorCheckParams, region: string) {
     });
 
     // We now use a single Lambda function for all HTTP monitoring
-    const functionName = 'checkWebsiteUptime';
+    const functionName = 'zd-check-http-endpoint';
     const lambdaParams = {
         FunctionName: functionName,
         Payload: Buffer.from(JSON.stringify(params))
@@ -57,7 +57,7 @@ async function checkFromRegion(params: MonitorCheckParams, region: string) {
 
         const command = new InvokeCommand(lambdaParams);
         const response = await lambda.send(command);
-        
+
         // Convert Uint8Array to string and parse JSON
         const result = JSON.parse(
             new TextDecoder().decode(response.Payload)
@@ -70,7 +70,7 @@ async function checkFromRegion(params: MonitorCheckParams, region: string) {
             isUp: result.isUp,
             action: 'LAMBDA_INVOKE_SUCCESS'
         });
-        
+
         return { region, ...result };
     } catch (error: any) {
         logger.error('Lambda function failed', {
