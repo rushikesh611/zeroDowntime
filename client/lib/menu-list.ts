@@ -10,28 +10,28 @@ import {
   ShieldAlert,
   Users
 } from "lucide-react";
-  
-  type Submenu = {
-    href: string;
-    label: string;
-    active?: boolean;
-    icon?: LucideIcon;
-  };
-  
-  type Menu = {
-    href: string;
-    label: string;
-    active: boolean;
-    icon: LucideIcon;
-    submenus?: Submenu[];
-  };
-  
-  type Group = {
-    groupLabel: string;
-    menus: Menu[];
-  };
-  
-  export function getMenuList(pathname: string): Group[] {
+
+type Submenu = {
+  href: string;
+  label: string;
+  active?: boolean;
+  icon?: LucideIcon;
+};
+
+type Menu = {
+  href: string;
+  label: string;
+  active: boolean;
+  icon: LucideIcon;
+  submenus?: Submenu[];
+};
+
+type Group = {
+  groupLabel: string;
+  menus: Menu[];
+};
+
+export function getMenuList(pathname: string): Group[] {
   return [
     {
       groupLabel: "",
@@ -102,20 +102,6 @@ import {
           label: "Users",
           active: pathname.includes("/users"),
           icon: Users,
-          submenus: []
-        },
-        {
-          href: "/billing",
-          label: "Billing",
-          active: pathname.includes("/billing"),
-          icon: CreditCard,
-          submenus: []
-        },
-        {
-          href: "/account",
-          label: "Account",
-          active: pathname.includes("/account"),
-          icon: Settings,
           submenus: []
         }
       ]

@@ -20,16 +20,16 @@ type AssertionType = 'status' | 'header' | 'body'
 type AssertionCondition = 'equals' | 'notEquals' | 'contains' | 'notContains' | 'matches' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual'
 
 interface RequestHeader {
-  key: string
-  value: string
+    key: string
+    value: string
 }
 
 interface Assertion {
-  id: string
-  type: AssertionType
-  condition: AssertionCondition
-  property?: string
-  value: string
+    id: string
+    type: AssertionType
+    condition: AssertionCondition
+    property?: string
+    value: string
 }
 
 const UpdateMonitorPage = () => {
@@ -58,7 +58,7 @@ const UpdateMonitorPage = () => {
                 setEmails(data.emails)
                 setFrequency(data.frequency)
                 setSelectedRegions(new Set(data.regions))
-                
+
                 // Load headers
                 if (data.headers && typeof data.headers === 'object') {
                     const headerArray = Object.entries(data.headers).map(([key, value]) => ({
@@ -67,7 +67,7 @@ const UpdateMonitorPage = () => {
                     }))
                     setRequestHeaders(headerArray)
                 }
-                
+
                 // Load assertions
                 if (data.assertions && Array.isArray(data.assertions)) {
                     const assertionsWithId = data.assertions.map((a: any, index: number) => ({
@@ -76,7 +76,7 @@ const UpdateMonitorPage = () => {
                     }))
                     setAssertions(assertionsWithId)
                 }
-                
+
                 setLoading(false)
             } catch (error) {
                 console.error('Error fetching monitor data:', error)
@@ -202,7 +202,7 @@ const UpdateMonitorPage = () => {
 
     if (loading) {
         return (
-            <ContentLayout title='Update Monitor'>
+            <ContentLayout>
                 <div className="flex items-center justify-center h-64">
                     <p className="text-muted-foreground">Loading monitor data...</p>
                 </div>
@@ -211,7 +211,7 @@ const UpdateMonitorPage = () => {
     }
 
     return (
-        <ContentLayout title='Update Monitor'>
+        <ContentLayout>
             <div className="mx-auto max-w-2xl py-8">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold tracking-tight mb-2">Update Monitor</h1>

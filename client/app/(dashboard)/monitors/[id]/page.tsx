@@ -60,7 +60,7 @@ const MonitorDetailsPage = () => {
   };
 
   return (
-    <ContentLayout title={`Monitor Details`}>
+    <ContentLayout>
       {/* Header Card */}
       <Card className="border-none shadow-sm">
         <CardHeader className="pb-4">

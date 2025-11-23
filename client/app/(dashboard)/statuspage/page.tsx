@@ -21,9 +21,9 @@ const StatusPage = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createdStatusPage, setCreatedStatusPage] = useState<{id: string, subdomain: string} | null>(null);
-  
-  const domain = process.env.NODE_ENV === 'production' 
+  const [createdStatusPage, setCreatedStatusPage] = useState<{ id: string, subdomain: string } | null>(null);
+
+  const domain = process.env.NODE_ENV === 'production'
     ? 'zerodowntime.live'
     : 'localhost:3000';
 
@@ -53,10 +53,10 @@ const StatusPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedMonitor || !subdomain || !title) {
       toast({
-        variant: "destructive", 
+        variant: "destructive",
         title: "Missing fields",
         description: "Please fill all required fields"
       });
@@ -64,7 +64,7 @@ const StatusPage = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const response = await fetch("/api/status-pages", {
         method: "POST",
@@ -104,7 +104,7 @@ const StatusPage = () => {
     setTitle("");
     setDescription("");
     setIsSubmitting(false);
-    
+
     // Refresh the list of status pages
     const statusPageList = document.getElementById('status-page-list');
     if (statusPageList) {
@@ -122,7 +122,7 @@ const StatusPage = () => {
   };
 
   return (
-    <ContentLayout title="Status Pages">
+    <ContentLayout>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Status Pages</h1>
@@ -153,8 +153,8 @@ const StatusPage = () => {
                         Monitor
                       </Label>
                       <div className="col-span-3">
-                        <Select 
-                          value={selectedMonitor} 
+                        <Select
+                          value={selectedMonitor}
                           onValueChange={setSelectedMonitor}
                         >
                           <SelectTrigger>
