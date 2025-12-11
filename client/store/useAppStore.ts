@@ -14,9 +14,11 @@ type User = {
 interface AppStore {
   // auth state
   user: User | null;
-  
+
   isLoading: boolean;
   login: () => void;
+  loginWithGithub: () => void;
+  loginWithGoogle: () => void;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 
@@ -42,6 +44,14 @@ export const useAppStore = create<AppStore>()(
         login: () => {
           set({ isLoading: true });
           window.location.href = '/api/auth/github';
+        },
+        loginWithGithub: () => {
+          set({ isLoading: true });
+          window.location.href = '/api/auth/github';
+        },
+        loginWithGoogle: () => {
+          set({ isLoading: true });
+          window.location.href = '/api/auth/google';
         },
         logout: async () => {
           // Call backend to clear the token (cookie)
@@ -91,7 +101,7 @@ export const useAppStore = create<AppStore>()(
           }
         },
         pauseMonitor: async (monitorId: string) => {
-          const data = { status: 'PAUSED'}
+          const data = { status: 'PAUSED' }
           try {
             const response = await fetchWithAuth(`/api/monitors/${monitorId}`, {
               method: 'PUT',

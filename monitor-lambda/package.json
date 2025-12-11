@@ -4,10 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-      "build": "tsc",
-      "start": "node dist/index.js",
-      "dev": "nodemon --watch src --exec ts-node src/index.ts"
-    },
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "npm run build && node dist/monitor.test.js",
+    "dev": "nodemon --watch src --exec ts-node src/index.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

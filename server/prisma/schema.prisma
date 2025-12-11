@@ -15,7 +15,8 @@ datasource db {
 
 model User {
   id        String      @id @default(auto()) @map("_id") @db.ObjectId
-  githubId  String      @unique
+  githubId  String?     @unique
+  googleId  String?     @unique
   username  String
   email     String?
   avatarUrl String?
@@ -24,21 +25,21 @@ model User {
 }
 
 model Monitor {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
   url         String
-  monitorType String       @default("http") // "http" or "tcp"
-  method      String       @default("GET")  // HTTP method (GET, POST, etc.)
-  headers     Json?        // Request headers
-  body        String?      // Request body
-  assertions  Json?        // Assertions for status, headers, and body
+  monitorType String      @default("http") // "http" or "tcp"
+  method      String      @default("GET") // HTTP method (GET, POST, etc.)
+  headers     Json? // Request headers
+  body        String? // Request body
+  assertions  Json? // Assertions for status, headers, and body
   emails      String[]
-  frequency   Int          @default(300)    // in seconds
-  status      String       @default("RUNNING")
+  frequency   Int         @default(300) // in seconds
+  status      String      @default("RUNNING")
   regions     String[]
-  user        User         @relation(fields: [userId], references: [id])
-  userId      String       @db.ObjectId
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String      @db.ObjectId
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   StatusPage  StatusPage?
 }
 
@@ -49,9 +50,9 @@ model MonitorLog {
   statusCode    Int
   responseTime  Int
   region        String
-  headers       Json?    // Response headers for API monitoring
-  responseBody  String?  // Response body for API monitoring (truncated)
-  error         String?  // Error message if any
+  headers       Json? // Response headers for API monitoring
+  responseBody  String? // Response body for API monitoring (truncated)
+  error         String? // Error message if any
   lastCheckedAt DateTime @default(now())
 }
 
@@ -69,7 +70,7 @@ model LogSource {
 
 model StatusPage {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  monitorId   String   @db.ObjectId @unique
+  monitorId   String   @unique @db.ObjectId
   monitor     Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
   subdomain   String   @unique
   title       String

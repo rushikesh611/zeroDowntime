@@ -73,7 +73,7 @@ const MonitorsPage = () => {
           <Button
             onClick={handleCreateMonitor}
             size="lg"
-            className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow rounded-sm"
+            className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow"
           >
             <Plus className="mr-2 h-4 w-4" />
             Create Monitor
@@ -82,7 +82,7 @@ const MonitorsPage = () => {
 
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-none shadow-sm hover:shadow-md transition-shadow rounded-none">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -96,7 +96,7 @@ const MonitorsPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-none shadow-sm hover:shadow-md transition-shadow rounded-none">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -112,7 +112,7 @@ const MonitorsPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+          <Card className="border-none shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1 rounded-none">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -157,7 +157,7 @@ const MonitorsPage = () => {
                 {monitors.map((monitor, index) => (
                   <Card
                     key={monitor.id}
-                    className="border-none shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group animate-in fade-in-50 slide-in-from-bottom-4"
+                    className="border-none shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group animate-in fade-in-50 slide-in-from-bottom-4 rounded-none"
                     style={{ animationDelay: `${index * 50}ms` }}
                     onClick={() => handleMonitorClick(monitor.id)}
                   >

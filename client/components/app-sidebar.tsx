@@ -24,6 +24,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuBadge,
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
@@ -111,14 +112,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                     return (
                                         <SidebarMenuItem key={item.label}>
                                             <SidebarMenuButton
-                                                asChild
+                                                asChild={!item.disabled}
                                                 isActive={isActive}
                                                 tooltip={item.label}
+                                                className={item.disabled ? "opacity-50 cursor-not-allowed" : ""}
                                             >
-                                                <Link href={item.href}>
-                                                    {Icon && <Icon />}
-                                                    <span>{item.label}</span>
-                                                </Link>
+                                                {item.disabled ? (
+                                                    <>
+                                                        {Icon && <Icon />}
+                                                        <span>{item.label}</span>
+                                                        <SidebarMenuBadge>Soon</SidebarMenuBadge>
+                                                    </>
+                                                ) : (
+                                                    <Link href={item.href}>
+                                                        {Icon && <Icon />}
+                                                        <span>{item.label}</span>
+                                                    </Link>
+                                                )}
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
                                     )
