@@ -1,34 +1,55 @@
-import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
+import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { logger } from '../utils/logger';
 
 interface MonitorCheckParams {
-    url: string;
-    type: 'http';
-    method: string;
+    url?: string;
+    monitorType: string;
+    method?: string;
     headers?: Record<string, string>;
     body?: string;
     assertions?: any[];
+    host?: string;
+    port?: number;
 }
 
 export async function checkEndpoint(params: MonitorCheckParams, regions: string[]) {
     console.log(params)
-    logger.info('Starting HTTP check', {
-        url: params.url,
-        method: params.method,
-        regions,
-        action: 'HTTP_CHECK_START'
-    });
-    console.log('Checking endpoint:', params.url, 'in regions:', regions);
+    if (params.monitorType === 'http') {
 
-    const results = await Promise.all(regions.map(region => checkFromRegion(params, region)));
+        logger.info("HTTP_CHECK_START", {
+            url: params.url,
+            method: params.method,
+            regions
+        });
+        console.log('Checking endpoint:', params.url, 'in regions:', regions);
 
-    logger.info('Completed HTTP check', {
-        url: params.url,
-        results,
-        action: 'HTTP_CHECK_COMPLETE'
-    });
+        const results = await Promise.all(regions.map(region => checkFromRegion(params, region)));
 
-    return results;
+        logger.info('HTTP_CHECK_COMPLETE', {
+            url: params.url,
+            results
+        });
+
+        return results;
+    } else if (params.monitorType === 'tcp') {
+        logger.info("TCP_CHECK_START", {
+            host: params.host,
+            port: params.port,
+            regions
+        });
+        console.log('Checking endpoint:', params.host + ':' + params.port, 'in regions:', regions);
+
+        const results = await Promise.all(regions.map(region => checkFromRegion(params, region)));
+
+        logger.info('TCP_CHECK_COMPLETE', {
+            host: params.host + ':' + params.port,
+            results
+        });
+
+        return results;
+    }
+
+    return [];
 }
 
 async function checkFromRegion(params: MonitorCheckParams, region: string) {
@@ -40,7 +61,6 @@ async function checkFromRegion(params: MonitorCheckParams, region: string) {
         }
     });
 
-    // We now use a single Lambda function for all HTTP monitoring
     const functionName = 'zd-check-http-endpoint';
     const lambdaParams = {
         FunctionName: functionName,
@@ -48,11 +68,16 @@ async function checkFromRegion(params: MonitorCheckParams, region: string) {
     };
 
     try {
-        logger.info(`Invoking lambda function for ${params.type} check`, {
+        logger.info(`LAMBDA_INVOKE_START`, {
+            type: params.monitorType,
             region,
             url: params.url,
             method: params.method,
-            action: 'LAMBDA_INVOKE_START'
+            headers: params.headers,
+            body: params.body,
+            assertions: params.assertions,
+            host: params.host,
+            port: params.port
         });
 
         const command = new InvokeCommand(lambdaParams);
@@ -63,21 +88,19 @@ async function checkFromRegion(params: MonitorCheckParams, region: string) {
             new TextDecoder().decode(response.Payload)
         );
 
-        logger.info('Lambda function response', {
+        logger.info('LAMBDA_INVOKE_SUCCESS', {
             region,
             status: result.statusCode,
             responseTime: result.responseTime,
-            isUp: result.isUp,
-            action: 'LAMBDA_INVOKE_SUCCESS'
+            isUp: result.isUp
         });
 
         return { region, ...result };
     } catch (error: any) {
-        logger.error('Lambda function failed', {
+        logger.error('LAMBDA_INVOKE_ERROR', {
             region,
             error: error.message || 'Unknown error',
-            action: 'LAMBDA_INVOKE_ERROR'
         });
-        return { region, error: `Failed to check ${params.type} endpoint` };
+        return { region, error: `Failed to check ${params.monitorType} endpoint` };
     }
 }

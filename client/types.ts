@@ -1,6 +1,6 @@
 export interface Monitor {
     id: string;
-    url: string;
+    url?: string;
     emails: string[];
     regions: string[];
     frequency: number;
@@ -8,7 +8,9 @@ export interface Monitor {
     userId: string;
     createdAt: string;
     updatedAt: string;
-    method: string;
+    method?: string;
+    host?: string;
+    port?: number;
     headers?: Record<string, string>;
     body?: string;
     assertions?: any[];

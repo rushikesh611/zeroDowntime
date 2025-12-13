@@ -1,4 +1,5 @@
 import {
+  Bell,
   CreditCard,
   Database,
   Globe,
@@ -94,6 +95,18 @@ export function getMenuList(pathname: string): Group[] {
           //     icon: Search
           //   }
           // ],
+          disabled: true
+        }
+      ]
+    }, {
+      groupLabel: "",
+      menus: [
+        {
+          href: "/notifications",
+          label: "Notifications",
+          active: pathname.includes("/notifications"),
+          icon: Bell,
+          submenus: [],
           disabled: true
         }
       ]

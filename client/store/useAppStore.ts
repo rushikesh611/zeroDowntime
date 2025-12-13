@@ -16,7 +16,6 @@ interface AppStore {
   user: User | null;
 
   isLoading: boolean;
-  login: () => void;
   loginWithGithub: () => void;
   loginWithGoogle: () => void;
   logout: () => Promise<void>;
@@ -41,10 +40,6 @@ export const useAppStore = create<AppStore>()(
       (set, get) => ({
         user: null,
         isLoading: true,
-        login: () => {
-          set({ isLoading: true });
-          window.location.href = '/api/auth/github';
-        },
         loginWithGithub: () => {
           set({ isLoading: true });
           window.location.href = '/api/auth/github';

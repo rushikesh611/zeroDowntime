@@ -1,8 +1,8 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import session from 'express-session'
 import passport from './config/passport'
-import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import { PrismaClient } from '@prisma/client'
 import helmet from 'helmet'
@@ -16,7 +16,6 @@ import { logger, requestLogger } from './utils/logger'
 import { logVaultTransport } from './utils/logger'
 import statusPageRoutes from './routes/statuspage';
 
-dotenv.config()
 
 export const app = express()
 const PORT = process.env.PORT || 3000;
@@ -79,7 +78,8 @@ app.listen(PORT, async () => {
     await prisma.$connect();
     logger.info('Database connected successfully');
   } catch (error: any) {
-    logger.error('Database connection failed:', error.message);
+    logger.error('Database connection failed:', error);
+    console.error('Full Database Error:', error);
     process.exit(1);
   }
 });

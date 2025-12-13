@@ -22,7 +22,6 @@ router.post('/', auth, async (req, res) => {
         console.log('Received monitor data:', monitorData);
         // Prepare monitor data based on type
         const baseMonitorData = {
-            url: monitorData.url,
             monitorType: monitorData.monitorType,
             emails: monitorData.emails,
             frequency: monitorData.frequency,
@@ -33,15 +32,21 @@ router.post('/', auth, async (req, res) => {
         console.log('Base monitor data:', baseMonitorData);
 
         // Add HTTP-specific fields only if monitorType is http
-        const monitorCreateData = monitorData.monitorType === 'http' 
+        const monitorCreateData = monitorData.monitorType === 'http'
             ? {
                 ...baseMonitorData,
+                url: monitorData.url,
                 method: monitorData.method,
                 headers: monitorData.headers,
                 body: monitorData.body,
                 assertions: monitorData.assertions ? JSON.parse(JSON.stringify(monitorData.assertions)) : undefined,
-            }
-            : baseMonitorData;
+            } : monitorData.monitorType === 'tcp'
+                ? {
+                    ...baseMonitorData,
+                    host: monitorData.host,
+                    port: monitorData.port,
+                }
+                : baseMonitorData;
 
         const monitor = await prisma.monitor.create({
             data: monitorCreateData
@@ -50,6 +55,7 @@ router.post('/', auth, async (req, res) => {
         logger.info('Monitor created successfully:', { monitorId: monitor.id });
     } catch (error) {
         logger.error('Error creating monitor:', error);
+        console.log(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 })
@@ -160,12 +166,12 @@ router.post('/:id/check', auth, async (req, res) => {
 
         // Prepare check parameters for HTTP monitor
         const monitorResults = await checkEndpoint({
-            url: monitor.url,
-            type: 'http',
-            method: monitor.method,
-            headers: monitor.headers as Record<string, string> | undefined,
-            body: monitor.body || undefined,
-            assertions: monitor.assertions as any[] | undefined  // ADD THIS LINE
+            url: monitor.url ?? undefined,
+            monitorType: 'http',
+            method: monitor.method ?? undefined,
+            headers: (monitor.headers as Record<string, string>) ?? undefined,
+            body: monitor.body ?? undefined,
+            assertions: (monitor.assertions as any[]) ?? undefined  // ADD THIS LINE
         }, monitor.regions);
 
         res.json(monitorResults);

@@ -15,15 +15,17 @@ export interface Assertion {
 
 // Monitor Input Type
 export interface MonitorInput {
-  url: string;
+  url?: string;
   monitorType: MonitorType;
-  method: HttpMethod;
+  method?: HttpMethod;
   headers?: Record<string, string>;
   body?: string;
   assertions?: Assertion[];
   emails: string[];
   frequency: number;
   regions: string[];
+  host?: string;
+  port?: number;
 }
 
 // Monitor Check Result Types
