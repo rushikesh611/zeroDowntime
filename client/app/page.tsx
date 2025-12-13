@@ -4,18 +4,25 @@ import { AlertingChannels } from '@/components/landing/AlertingChannels';
 import { MonitoringTypes } from '@/components/landing/MonitoringTypes';
 import { RealtimeCharts } from '@/components/landing/RealtimeCharts';
 import { StatusPageFeature } from '@/components/landing/StatusPageFeature';
-import { Spinner } from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Card } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAppStore } from '@/store/useAppStore';
-import { Check, Clock, Github, Shield, Zap } from 'lucide-react';
+import { Check, Clock, Github, Shield, Zap, Loader2, Mail, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function Home() {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const router = useRouter();
-  const { login, user, checkAuth, isLoading } = useAppStore();
+  const { loginWithGithub, loginWithGoogle, user, checkAuth, isLoading } = useAppStore();
 
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [scrolled, setScrolled] = useState(false);
@@ -118,7 +125,7 @@ export default function Home() {
   if (isPageLoading || (user && !isLoading)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Spinner />
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -164,20 +171,41 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <Button size="lg" className="bg-black hover:bg-gray-800 text-white inline-flex items-center justify-center" onClick={login}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Spinner />
-                  ) : (
-                    <Github className="h-4 w-4" />
-                  )}
-                  <span className='ml-2'>{isLoading ? 'Logging in' : 'Login with Github'}</span>
-
-                </Button>
-                <Button size="lg" variant="outline" className="border-2 border-gray-200 text-gray-900 hover:bg-gray-50 px-8">
-                  View Live Demo
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="lg" className="bg-black hover:bg-gray-800 text-white inline-flex items-center justify-center px-8 h-12 text-base">
+                      Start Monitoring for Free
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle hidden={true} className="text-center text-xl">Welcome back</DialogTitle>
+                      <DialogDescription className="text-center">
+                        Sign in to your account to continue
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-4 py-4">
+                      {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <Loader2 className="h-8 w-8 animate-spin mb-4" />
+                          <p className="text-sm text-gray-500">Redirecting to login provider...</p>
+                        </div>
+                      ) : (
+                        <>
+                          <Button size="lg" variant="outline" className="w-full relative h-12 border-2 hover:bg-gray-50" onClick={loginWithGithub}>
+                            <Github className="absolute left-4 h-5 w-5" />
+                            Continue with GitHub
+                          </Button>
+                          <Button size="lg" variant="outline" className="w-full relative h-12 border-2 hover:bg-gray-50" onClick={loginWithGoogle}>
+                            <Mail className="absolute left-4 h-5 w-5" />
+                            Continue with Google
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               {/* Trust Badges */}

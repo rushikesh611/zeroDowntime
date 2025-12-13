@@ -96,3 +96,6 @@ test.db
 
 # Terraform Lambda file
 *.zip
+
+# Prisma
+generated

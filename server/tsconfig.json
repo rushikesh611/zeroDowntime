@@ -3,7 +3,13 @@
     "compilerOptions": {
         "outDir": "./dist",
         "sourceMap": true,
-        "strict": true
+        "strict": true,
+        "baseUrl": ".",
+        "paths": {
+            "@prisma/client": [
+                "./generated/prisma/client"
+            ]
+        }
     },
     "include": [
         "src/**/*.ts"

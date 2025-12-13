@@ -1,4 +1,5 @@
 import {
+  Bell,
   CreditCard,
   Database,
   Globe,
@@ -24,6 +25,7 @@ type Menu = {
   active: boolean;
   icon: LucideIcon;
   submenus?: Submenu[];
+  disabled?: boolean;
 };
 
 type Group = {
@@ -53,7 +55,8 @@ export function getMenuList(pathname: string): Group[] {
           label: "Status pages",
           active: pathname.includes("/statuspage"),
           icon: Radio,
-          submenus: []
+          submenus: [],
+          disabled: true
         }
       ]
     },
@@ -65,7 +68,8 @@ export function getMenuList(pathname: string): Group[] {
           label: "Incidents",
           active: pathname.includes("/incidents"),
           icon: ShieldAlert,
-          submenus: []
+          submenus: [],
+          disabled: true
         }
       ]
     },
@@ -77,20 +81,33 @@ export function getMenuList(pathname: string): Group[] {
           label: "Logtail",
           active: pathname.includes("/logtail"),
           icon: Logs,
-          submenus: [
-            {
-              href: "/logtail/sources",
-              label: "Sources",
-              active: pathname.includes("/logtail/sources"),
-              icon: Database
-            },
-            {
-              href: "/logtail/search",
-              label: "Search logs",
-              active: pathname.includes("/logtail/search"),
-              icon: Search
-            }
-          ]
+          // submenus: [
+          //   {
+          //     href: "/logtail/sources",
+          //     label: "Sources",
+          //     active: pathname.includes("/logtail/sources"),
+          //     icon: Database
+          //   },
+          //   {
+          //     href: "/logtail/search",
+          //     label: "Search logs",
+          //     active: pathname.includes("/logtail/search"),
+          //     icon: Search
+          //   }
+          // ],
+          disabled: true
+        }
+      ]
+    }, {
+      groupLabel: "",
+      menus: [
+        {
+          href: "/notifications",
+          label: "Notifications",
+          active: pathname.includes("/notifications"),
+          icon: Bell,
+          submenus: [],
+          disabled: true
         }
       ]
     },
@@ -102,7 +119,8 @@ export function getMenuList(pathname: string): Group[] {
           label: "Users",
           active: pathname.includes("/users"),
           icon: Users,
-          submenus: []
+          submenus: [],
+          disabled: true
         }
       ]
     }

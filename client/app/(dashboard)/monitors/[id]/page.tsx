@@ -71,7 +71,7 @@ const MonitorDetailsPage = () => {
               </div>
               <div className="space-y-2 flex-1 min-w-0">
                 <CardTitle className="text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight break-words">
-                  {monitor?.url}
+                  {monitor?.url || monitor?.host + ":" + monitor?.port}
                 </CardTitle>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                   <Badge

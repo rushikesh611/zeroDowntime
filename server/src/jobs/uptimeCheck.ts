@@ -45,20 +45,22 @@ export function startUptimeCheck() {
 
             if (currentTime.getTime() - lastCheckedAt.getTime() >= monitor.frequency * 1000) {
                 const results = await checkEndpoint({
-                    url: monitor.url,
-                    type: 'http',
-                    method: monitor.method,
-                    headers: monitor.headers as Record<string, string> | undefined,
-                    body: monitor.body || undefined,
-                    assertions: monitor.assertions as any[] | undefined 
+                    url: monitor.url ?? undefined,
+                    monitorType: monitor.monitorType,
+                    method: monitor.method ?? undefined,
+                    headers: (monitor.headers as Record<string, string>) ?? undefined,
+                    body: monitor.body ?? undefined,
+                    assertions: (monitor.assertions as any[]) ?? undefined,
+                    host: monitor.host ?? undefined,
+                    port: monitor.port ?? undefined
                 }, monitor.regions)
                 const isDown = results.some(result => !result.isUp)
 
                 if (isDown) {
-                    logger.warn(`Endpoint ${monitor.url} is down`, { timestamp: currentTime, results })
-                    await sendAlert(monitor.emails, monitor.url, results)
+                    logger.warn(`Endpoint ${monitor.url || monitor.host + ":" + monitor.port} is down`, { timestamp: currentTime, results })
+                    await sendAlert(monitor.emails, monitor.url || monitor.host + ":" + monitor.port || 'Unknown Target', results)
                 } else {
-                    logger.info(`Endpoint ${monitor.url} is up`, { timestamp: currentTime, monitorType: 'http' })
+                    logger.info(`Endpoint ${monitor.url || monitor.host + ":" + monitor.port} is up`, { timestamp: currentTime, monitorType: monitor.monitorType })
                 }
 
                 // Initialize or update cache

@@ -1,9 +1,9 @@
 'use client'
 
-import Circles from "@/components/circles";
 import { ContentLayout } from "@/components/dashboard/content-layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,18 +12,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatDateDifference } from "@/lib/utils";
 import { useAppStore } from '@/store/useAppStore';
 import {
   Activity,
-  Clock,
   EllipsisIcon,
   MonitorIcon,
   PauseIcon,
@@ -59,21 +59,20 @@ const MonitorsPage = () => {
 
   return (
     <ContentLayout>
-      <div className="space-y-6 animate-in fade-in-50 duration-500">
+      <div className="space-y-8 animate-in fade-in-50 duration-500">
         {/* Header Section */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Welcome back, {user?.username}
+              Monitors
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Monitor and manage your website uptime
+            <p className="text-muted-foreground">
+              Manage and track your uptime monitors.
             </p>
           </div>
           <Button
             onClick={handleCreateMonitor}
-            size="lg"
-            className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow rounded-sm"
+            className="w-full sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
             Create Monitor
@@ -81,192 +80,155 @@ const MonitorsPage = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Total Monitors</p>
-                  <p className="text-2xl font-bold">{monitors.length}</p>
-                </div>
-                <div className="rounded-full bg-primary/10 p-3">
-                  <Activity className="h-6 w-6 text-primary" />
-                </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Monitors
+              </CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{monitors.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active
+              </CardTitle>
+              <PlayIcon className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {monitors.filter(m => m.status === 'RUNNING').length}
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Active</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {monitors.filter(m => m.status === 'RUNNING').length}
-                  </p>
-                </div>
-                <div className="rounded-full bg-green-100 dark:bg-green-900/20 p-3">
-                  <PlayIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Paused</p>
-                  <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                    {monitors.filter(m => m.status === 'PAUSED').length}
-                  </p>
-                </div>
-                <div className="rounded-full bg-yellow-100 dark:bg-yellow-900/20 p-3">
-                  <PauseIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-                </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Paused
+              </CardTitle>
+              <PauseIcon className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">
+                {monitors.filter(m => m.status === 'PAUSED').length}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Monitors List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Your Monitors</h2>
-          </div>
-
+        {/* Monitors Table */}
+        <div className="rounded-md border bg-card">
           {monitors.length === 0 ? (
-            <Card className="border-dashed border-2">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="rounded-full bg-muted p-4 mb-4">
-                  <MonitorIcon className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">No monitors yet</h3>
-                <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                  Get started by creating your first monitor to track website uptime and performance.
-                </p>
-                <Button onClick={handleCreateMonitor}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Monitor
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <MonitorIcon className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No monitors yet</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                Get started by creation your first monitor.
+              </p>
+              <Button onClick={handleCreateMonitor} variant="outline">
+                Create Monitor
+              </Button>
+            </div>
           ) : (
-            <ScrollArea className="h-[calc(100vh-28rem)]">
-              <div className="space-y-3 pr-4">
-                {monitors.map((monitor, index) => (
-                  <Card
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[300px]">Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Frequency</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {monitors.map((monitor) => (
+                  <TableRow
                     key={monitor.id}
-                    className="border-none shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group animate-in fade-in-50 slide-in-from-bottom-4"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="cursor-pointer group"
                     onClick={() => handleMonitorClick(monitor.id)}
                   >
-                    <CardContent className="p-4 sm:p-5">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        {/* Left Section - Monitor Info */}
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          <div className="flex-shrink-0 mt-0.5">
-                            <Circles isPaused={monitor.status === 'PAUSED'} />
-                          </div>
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <p className="text-sm sm:text-base font-semibold truncate group-hover:text-primary transition-colors">
-                              {monitor.url}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                              <span className={`font-medium px-2 py-0.5 rounded-full ${monitor.status === 'PAUSED'
-                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
-                                : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                                }`}>
-                                {monitor.status}
-                              </span>
-                              <span>•</span>
-                              <span>{formatDateDifference(monitor.createdAt)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Middle Section - Frequency (Hidden on mobile) */}
-                        <div className="hidden lg:flex items-center justify-center px-4">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
-                                  <Clock className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm font-medium">{monitor.frequency}s</span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Checked every {monitor.frequency} seconds</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-
-                        {/* Right Section - Actions */}
-                        <div className="flex items-center justify-end">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 hover:bg-muted"
-                              >
-                                <EllipsisIcon className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-
-                            <DropdownMenuContent className="w-40" align="end">
-                              <DropdownMenuGroup>
-                                <DropdownMenuItem
-                                  className="cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    monitor.status === 'PAUSED'
-                                      ? startMonitor(monitor.id)
-                                      : pauseMonitor(monitor.id);
-                                  }}
-                                >
-                                  {monitor.status === 'PAUSED' ? (
-                                    <>
-                                      <PlayIcon className="h-4 w-4 mr-2" />
-                                      Start Monitor
-                                    </>
-                                  ) : (
-                                    <>
-                                      <PauseIcon className="h-4 w-4 mr-2" />
-                                      Pause Monitor
-                                    </>
-                                  )}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="cursor-pointer text-destructive focus:text-destructive"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteMonitor(monitor.id);
-                                  }}
-                                >
-                                  <TrashIcon className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${monitor.status === 'RUNNING' ? 'bg-green-500' : 'bg-yellow-500'
+                          }`} />
+                        <span className="truncate max-w-[250px]" title={monitor.url || monitor.host + ":" + monitor.port}>
+                          {monitor.url || monitor.host + ":" + monitor.port}
+                        </span>
                       </div>
-
-                      {/* Mobile Frequency Display */}
-                      <div className="flex lg:hidden mt-3 pt-3 border-t">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>Checks every {monitor.frequency} seconds</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={monitor.status === 'PAUSED' ? 'secondary' : 'default'}
+                        className={monitor.status === 'PAUSED' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' : 'bg-green-100 text-green-800 hover:bg-green-100'}
+                      >
+                        {monitor.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {monitor.frequency}s
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDateDifference(monitor.createdAt)} ago
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0"
+                          >
+                            <EllipsisIcon className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                monitor.status === 'PAUSED'
+                                  ? startMonitor(monitor.id)
+                                  : pauseMonitor(monitor.id);
+                              }}
+                            >
+                              {monitor.status === 'PAUSED' ? (
+                                <>
+                                  <PlayIcon className="h-4 w-4 mr-2" />
+                                  Start
+                                </>
+                              ) : (
+                                <>
+                                  <PauseIcon className="h-4 w-4 mr-2" />
+                                  Pause
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteMonitor(monitor.id);
+                              }}
+                            >
+                              <TrashIcon className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-            </ScrollArea>
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>
