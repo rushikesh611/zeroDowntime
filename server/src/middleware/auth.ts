@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from 'express'
-import jwt from 'jsonwebtoken'
-import { User, PrismaClient } from '@prisma/client'
-import { logger } from '../utils/logger';
+import { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { PrismaClient, User as PrismaUser } from "@prisma/client";
+
+import { logger } from '../utils/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -12,7 +13,7 @@ interface JwtPayload {
 declare global {
   namespace Express {
     interface Request {
-      user?: User;
+      user?: PrismaUser;
     }
   }
 }

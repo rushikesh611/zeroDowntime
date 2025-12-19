@@ -1,20 +1,19 @@
 {
-    "extends": "@tsconfig/node20/tsconfig.json",
     "compilerOptions": {
+        "target": "ES2023",
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
         "outDir": "./dist",
-        "sourceMap": true,
         "strict": true,
-        "baseUrl": ".",
-        "paths": {
-            "@prisma/client": [
-                "./generated/prisma/client"
-            ]
-        }
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
     },
     "include": [
-        "src/**/*.ts"
+        "src/**/*"
     ],
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "dist"
     ]
 }

@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 interface MonitorCheckParams {
     url?: string;

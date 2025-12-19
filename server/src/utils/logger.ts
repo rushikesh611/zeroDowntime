@@ -2,7 +2,7 @@
 import winston from "winston";
 import "winston-daily-rotate-file";
 import { v4 as uuidv4 } from 'uuid';
-import { LogVaultTransport } from "./logvaultTransportUtil";
+import { LogVaultTransport } from "./logvaultTransportUtil.js";
 
 const { combine, timestamp, json, ms } = winston.format;
 

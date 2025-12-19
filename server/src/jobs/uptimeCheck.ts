@@ -1,8 +1,9 @@
-import { Monitor, MonitorLog, PrismaClient } from '@prisma/client'
+import { PrismaClient, MonitorLog, Monitor } from '@prisma/client'
+
 import cron from 'node-cron'
-import { sendAlert } from '../services/emailService'
-import { checkEndpoint } from '../services/monitoringService'
-import { logger } from '../utils/logger'
+import { sendAlert } from '../services/emailService.js'
+import { checkEndpoint } from '../services/monitoringService.js'
+import { logger } from '../utils/logger.js'
 
 const prisma = new PrismaClient()
 
