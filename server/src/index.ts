@@ -2,19 +2,20 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import session from 'express-session'
-import passport from './config/passport'
+import passport from './config/passport.js'
 import cookieParser from 'cookie-parser'
 import { PrismaClient } from '@prisma/client'
 import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 
-import authRoutes from './routes/auth'
-import testAuthRoutes from './routes/testAuth'
-import monitorRoutes from './routes/monitors'
-import logRoutes from './routes/logSource'
-import { startUptimeCheck } from './jobs/uptimeCheck'
-import { logger, requestLogger } from './utils/logger'
-import { logVaultTransport } from './utils/logger'
-import statusPageRoutes from './routes/statuspage';
+import authRoutes from './routes/auth.js'
+import testAuthRoutes from './routes/testAuth.js'
+import monitorRoutes from './routes/monitors.js'
+import logRoutes from './routes/logSource.js'
+import { startUptimeCheck } from './jobs/uptimeCheck.js'
+import { logger, requestLogger } from './utils/logger.js'
+import { logVaultTransport } from './utils/logger.js'
+import statusPageRoutes from './routes/statuspage.js';
 
 
 export const app = express()
@@ -28,18 +29,31 @@ const corsOptions = {
   optionSuccessStatus: 200
 }
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
+
 app.disable('x-powered-by')
 
 
 // Middleware
 app.use(helmet())
+app.use(limiter)
 app.use(cors(corsOptions));
 app.use(cookieParser())
 app.use(express.json())
 app.use(session({
   secret: process.env.SESSION_SECRET || '32665854d225bef27db95842688a526',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: isProd,
+    httpOnly: true,
+    sameSite: 'strict'
+  }
 }))
 app.use(passport.initialize());
 app.use(passport.session());

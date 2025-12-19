@@ -67,7 +67,7 @@ const MonitorsPage = () => {
               Monitors
             </h1>
             <p className="text-muted-foreground">
-              Manage and track your uptime monitors.
+              Create and manage your monitors.
             </p>
           </div>
           <Button

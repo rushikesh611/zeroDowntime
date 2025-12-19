@@ -1,7 +1,7 @@
 import express from 'express';
-import { LogSourceService } from '../services/logSourceService';
-import auth from '../middleware/auth';
-import { logger } from '../utils/logger';
+import { LogSourceService } from '../services/logSourceService.js';
+import auth from '../middleware/auth.js';
+import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 

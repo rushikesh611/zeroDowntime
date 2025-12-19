@@ -1,17 +1,17 @@
 import { PrismaClient } from '@prisma/client';
 import express from 'express';
-import auth from '../middleware/auth';
+import auth from '../middleware/auth.js';
 
 import { Resend } from 'resend';
-import { checkEndpoint } from '../services/monitoringService';
-import { logger } from '../utils/logger';
+import { checkEndpoint } from '../services/monitoringService.js';
+import { logger } from '../utils/logger.js';
 
 
 const prisma = new PrismaClient();
 const router = express.Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-import { MonitorInput } from '../types/monitor';
+import { MonitorInput } from '../types/monitor.js';
 
 // Create monitor
 router.post('/', auth, async (req, res) => {

@@ -1,7 +1,8 @@
-import passport from 'passport'
+import passport from 'passport';
 import { Strategy as GithubStrategy } from 'passport-github2';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { PrismaClient, User as PrismaUser } from '@prisma/client'
+
+import { PrismaClient, User as PrismaUser } from "@prisma/client";
 
 const prisma = new PrismaClient()
 
