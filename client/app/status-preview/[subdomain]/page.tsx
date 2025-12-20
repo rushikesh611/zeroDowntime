@@ -1,11 +1,11 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, XCircle, AlertCircle, Activity } from "lucide-react";
-import { formatDistance, format } from "date-fns";
+import { format, formatDistance } from "date-fns";
+import { Activity, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface MonitorLog {
   id: string;
@@ -63,7 +63,7 @@ export default function StatusPreviewPage() {
 
   const calculateUptimePercentage = (logs: MonitorLog[]): string => {
     if (!logs || logs.length === 0) return "N/A";
-    
+
     const upCount = logs.filter(log => log.isUp).length;
     const percentage = (upCount / logs.length) * 100;
     return percentage.toFixed(2) + "%";
@@ -71,11 +71,11 @@ export default function StatusPreviewPage() {
 
   const getMostRecentStatus = (logs: MonitorLog[]): boolean => {
     if (!logs || logs.length === 0) return true;
-    
-    const mostRecent = logs.sort((a, b) => 
+
+    const mostRecent = logs.sort((a, b) =>
       new Date(b.lastCheckedAt).getTime() - new Date(a.lastCheckedAt).getTime()
     )[0];
-    
+
     return mostRecent.isUp;
   };
 
@@ -108,7 +108,7 @@ export default function StatusPreviewPage() {
   const { statusPage, logs } = data;
   const isCurrentlyUp = getMostRecentStatus(logs);
   const uptimePercentage = calculateUptimePercentage(logs);
-  const lastCheckedAt = logs.length > 0 ? new Date(logs[logs.length-1].lastCheckedAt) : null;
+  const lastCheckedAt = logs.length > 0 ? new Date(logs[logs.length - 1].lastCheckedAt) : null;
 
   return (
     <div className="flex min-h-screen flex-col items-center p-4 bg-muted/20">
@@ -155,7 +155,7 @@ export default function StatusPreviewPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="text-sm text-muted-foreground">
               Last checked: {lastCheckedAt ? formatDistance(lastCheckedAt, new Date(), { addSuffix: true }) : 'N/A'}
             </div>
