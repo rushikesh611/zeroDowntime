@@ -22,9 +22,10 @@ export const app = express()
 const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient()
 const isProd = process.env.NODE_ENV === 'production'
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
 const corsOptions = {
-  origin: isProd ? 'http://zd-client-service:3000' : 'http://localhost:3000',
+  origin: clientUrl,
   credentials: true,
   optionSuccessStatus: 200
 }
@@ -50,7 +51,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isProd,
+    secure: process.env.COOKIE_SECURE === 'true', // Flexible for HTTP/HTTPS
     httpOnly: true,
     sameSite: 'strict'
   }
