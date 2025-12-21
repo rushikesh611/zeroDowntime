@@ -156,7 +156,7 @@ export default function Home() {
                     <div className="w-5 h-5 bg-black rounded-full animate-ping opacity-75" />
                   </div>
                 </div>
-                <span className="text-4xl text-gray-900 tracking-tight">Zerodowntime</span>
+                <span className="text-4xl text-gray-900 tracking-tight">Beacn</span>
               </div>
 
               <h1 className="text-5xl md:text-6xl text-gray-900 mb-6 tracking-tight">
@@ -524,10 +524,10 @@ export default function Home() {
               <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
                 <div className="w-4 h-4 border-2 border-white rounded-full" />
               </div>
-              <span className="text-gray-900">Zerodowntime</span>
+              <span className="text-gray-900">Beacn</span>
             </div>
             <div className="text-sm text-gray-500">
-              © 2025 Zerodowntime. All rights reserved.
+              © 2025 Beacn. All rights reserved.
             </div>
           </div>
         </div>

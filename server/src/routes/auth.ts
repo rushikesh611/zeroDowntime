@@ -36,7 +36,7 @@ router.get('/github/callback',
             authProvider: 'github'
         });
 
-        res.redirect(CLIENT_URL);
+        res.redirect('/');
     }
 
 );
@@ -70,7 +70,7 @@ router.get('/google/callback',
             authProvider: 'google'
         });
 
-        res.redirect(CLIENT_URL);
+        res.redirect('/');
     }
 );
 

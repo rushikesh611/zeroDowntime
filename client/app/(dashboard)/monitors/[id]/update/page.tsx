@@ -101,6 +101,7 @@ const UpdateMonitorPage = () => {
     const { id } = useParams()
     const [loading, setLoading] = useState(true)
     const [emailInput, setEmailInput] = useState('')
+    const [initialMonitorType, setInitialMonitorType] = useState<string | null>(null)
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -137,6 +138,7 @@ const UpdateMonitorPage = () => {
 
                 // Prepare default values
                 const type = data.monitorType || data.type || 'http';
+                setInitialMonitorType(type)
                 let tcpHost = '';
                 if (type === 'tcp') {
                     tcpHost = `${data.host}:${data.port}`;
@@ -297,6 +299,7 @@ const UpdateMonitorPage = () => {
                                                         variant={field.value === 'http' ? 'default' : 'outline'}
                                                         onClick={() => field.onChange('http')}
                                                         className="w-full"
+                                                        disabled={initialMonitorType === 'tcp'}
                                                     >
                                                         HTTP
                                                     </Button>
@@ -305,6 +308,7 @@ const UpdateMonitorPage = () => {
                                                         variant={field.value === 'tcp' ? 'default' : 'outline'}
                                                         onClick={() => field.onChange('tcp')}
                                                         className="w-full"
+                                                        disabled={initialMonitorType === 'http'}
                                                     >
                                                         TCP
                                                     </Button>

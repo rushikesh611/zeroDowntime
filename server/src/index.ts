@@ -1,21 +1,19 @@
+import { PrismaClient } from '@prisma/client'
+import cookieParser from 'cookie-parser'
+import cors from 'cors'
 import 'dotenv/config'
 import express from 'express'
-import cors from 'cors'
-import session from 'express-session'
-import passport from './config/passport.js'
-import cookieParser from 'cookie-parser'
-import { PrismaClient } from '@prisma/client'
-import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
-
-import authRoutes from './routes/auth.js'
-import testAuthRoutes from './routes/testAuth.js'
-import monitorRoutes from './routes/monitors.js'
-import logRoutes from './routes/logSource.js'
+import session from 'express-session'
+import helmet from 'helmet'
+import passport from './config/passport.js'
 import { startUptimeCheck } from './jobs/uptimeCheck.js'
-import { logger, requestLogger } from './utils/logger.js'
-import { logVaultTransport } from './utils/logger.js'
-import statusPageRoutes from './routes/statuspage.js';
+import authRoutes from './routes/auth.js'
+import logRoutes from './routes/logSource.js'
+import monitorRoutes from './routes/monitors.js'
+import statusPageRoutes from './routes/statuspage.js'
+import testAuthRoutes from './routes/testAuth.js'
+import { logger, logVaultTransport } from './utils/logger.js'
 
 
 export const app = express()
@@ -23,6 +21,14 @@ const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient()
 const isProd = process.env.NODE_ENV === 'production'
 const clientUrl = isProd ? process.env.CLIENT_URL : 'http://localhost:3000';
+
+app.set('trust proxy', 1); // Trust first proxy (Nginx)
+
+if (isProd && !process.env.CLIENT_URL) {
+  logger.warn('CLIENT_URL not set in production environment. CORS may be misconfigured.');
+  console.warn('CLIENT_URL not set in production environment.');
+}
+
 
 const corsOptions = {
   origin: clientUrl,

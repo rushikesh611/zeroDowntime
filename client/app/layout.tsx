@@ -9,7 +9,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "ZeroDowntime",
+  title: "Beacn",
   description: "Prevent downtime",
 };
 

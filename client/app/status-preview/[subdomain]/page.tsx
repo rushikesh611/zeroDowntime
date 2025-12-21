@@ -115,7 +115,7 @@ export default function StatusPreviewPage() {
       <header className="w-full max-w-3xl flex items-center justify-center mb-10 pt-8">
         <div className="flex items-center">
           <Activity className="h-6 w-6 mr-2" />
-          <h1 className="text-2xl font-bold">ZeroDowntime</h1>
+          <h1 className="text-2xl font-bold">Beacn</h1>
         </div>
       </header>
 
@@ -193,7 +193,7 @@ export default function StatusPreviewPage() {
         </Card>
 
         <footer className="mt-12 text-center text-xs text-muted-foreground pb-8">
-          <p>Powered by ZeroDowntime • {format(new Date(), 'MMMM d, yyyy')}</p>
+          <p>Powered by Beacn • {format(new Date(), 'MMMM d, yyyy')}</p>
         </footer>
       </div>
     </div>
