@@ -22,9 +22,6 @@ sudo npm install -g pnpm
 sudo npm install -g pm2
 
 # 4. Install Dependencies
-echo "Installing root dependencies..."
-pnpm install
-
 echo "Installing client dependencies..."
 cd client
 pnpm install

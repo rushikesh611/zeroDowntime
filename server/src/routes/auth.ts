@@ -6,7 +6,7 @@ import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
-
+console.log(CLIENT_URL);
 router.get('/github', passport.authenticate('github'));
 
 router.get('/github/callback',
@@ -27,7 +27,7 @@ router.get('/github/callback',
 
         res.cookie('token', token, {
             httpOnly: true,
-            // secure: process.env.NODE_ENV === 'production',
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 3600000,
         });
@@ -61,7 +61,7 @@ router.get('/google/callback',
 
         res.cookie('token', token, {
             httpOnly: true,
-            // secure: process.env.NODE_ENV === 'production',
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 3600000,
         });

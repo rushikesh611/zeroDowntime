@@ -23,8 +23,8 @@ const StatusPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdStatusPage, setCreatedStatusPage] = useState<{ id: string, subdomain: string } | null>(null);
 
-  const domain = process.env.NODE_ENV === 'production'
-    ? 'zerodowntime.live'
+  const domain = process.env.NEXT_PUBLIC_CLIENT_URL
+    ? new URL(process.env.NEXT_PUBLIC_CLIENT_URL).host
     : 'localhost:3000';
 
   const fetchMonitors = async () => {
