@@ -5,6 +5,7 @@ import { User } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 
 const router = express.Router();
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 router.get('/github', passport.authenticate('github'));
 
@@ -35,7 +36,7 @@ router.get('/github/callback',
             authProvider: 'github'
         });
 
-        res.redirect('http://localhost:3000/');
+        res.redirect(CLIENT_URL);
     }
 
 );
@@ -69,7 +70,7 @@ router.get('/google/callback',
             authProvider: 'google'
         });
 
-        res.redirect('http://localhost:3000/');
+        res.redirect(CLIENT_URL);
     }
 );
 

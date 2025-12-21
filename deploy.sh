@@ -7,15 +7,14 @@ echo "Starting ZeroDowntime Deployment..."
 
 # 1. Update System
 echo "Updating system..."
-sudo apt-get update -y
-sudo apt-get upgrade -y
-sudo apt-get install -y curl git unzip build-essential
+sudo apt update -y
+sudo apt upgrade -y
+sudo apt install -y curl git unzip build-essential
 
 # 2. Install Node.js 22
 echo "Installing Node.js 22..."
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
-sudo apt-get install -y npm
+sudo apt install -y nodejs
 
 # 3. Install pnpm
 echo "Installing pnpm..."
@@ -50,7 +49,7 @@ cd ..
 
 # 6. Configure Nginx
 echo "Configuring Nginx..."
-sudo apt-get install -y nginx
+sudo apt install -y nginx
 sudo cp nginx.temp.conf /etc/nginx/sites-available/default
 sudo nginx -t
 sudo systemctl restart nginx
