@@ -194,31 +194,24 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
 
     if (!Array.isArray(data) || data.length === 0) {
         return (
-            <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-                <div className="p-4 sm:p-6 pt-0">
-                    <div className="h-64 sm:h-80 flex flex-col items-center justify-center text-center">
-                        <div className="rounded-full bg-muted p-3 mb-3">
-                            <Activity className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm text-muted-foreground">No availability data yet</p>
-                        <p className="text-xs text-muted-foreground mt-1">Data will appear once monitoring begins</p>
-                    </div>
+            <div className="h-64 flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Activity className="w-5 h-5 text-primary" />
                 </div>
+                <p className="text-sm font-semibold text-on-surface">No availability data yet</p>
+                <p className="text-xs text-on-surface-variant mt-1 font-medium">Data will appear once monitoring begins</p>
             </div>
         );
     }
 
     return (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md">
-            <div className="flex flex-col space-y-1.5 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                            <TrendingUp className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                            <span className="font-semibold text-green-600 dark:text-green-400">{uptime}%</span>
-                            <span>uptime in selected period</span>
-                        </div>
-                    </div>
+        <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2 text-sm">
+                    <TrendingUp className="w-4 h-4 text-secondary" />
+                    <span className="font-bold text-secondary">{uptime}%</span>
+                    <span className="text-on-surface-variant font-medium">uptime in selected period</span>
+                </div>
                     <Select
                         value={selectedRange}
                         onValueChange={(value: TimeRange) => setSelectedRange(value)}
@@ -234,9 +227,8 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
                             ))}
                         </SelectContent>
                     </Select>
-                </div>
             </div>
-            <div className="p-4 sm:p-6 pt-0">
+            <div>
                 <div className="h-64 sm:h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart

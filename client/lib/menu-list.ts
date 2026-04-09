@@ -107,7 +107,7 @@ export function getMenuList(pathname: string): Group[] {
           active: pathname.includes("/notifications"),
           icon: Bell,
           submenus: [],
-          disabled: true
+          disabled: false
         }
       ]
     },

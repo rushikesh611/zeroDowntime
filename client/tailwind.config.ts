@@ -96,9 +96,9 @@ const config: Config = {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				poppins: [
-					'var(--font-poppins)'
-				]
+				poppins: ['var(--font-poppins)'],
+				manrope: ['var(--font-manrope)', 'sans-serif'],
+				inter: ['var(--font-inter)', 'sans-serif'],
 			}
 		}
 	},

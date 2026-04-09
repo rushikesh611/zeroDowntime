@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Manrope, Inter } from "next/font/google";
 import "./globals.css";
 
-const poppins = Poppins({
+const manrope = Manrope({
   subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-poppins",
+  variable: "--font-manrope",
 });
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+
 export const metadata: Metadata = {
-  title: "Beacn",
-  description: "Prevent downtime",
+  title: "Beacn - Synthetic Monitoring That Never Sleeps",
+  description: "Advanced synthetic monitoring platform.",
 };
 
 export default function RootLayout({
@@ -19,9 +24,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning={true}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+      </head>
       <body
-        className={`${poppins.variable} antialiased font-poppins`}
+        className={`${manrope.variable} ${inter.variable} antialiased font-inter bg-background text-foreground`}
       >
         {children}
       </body>

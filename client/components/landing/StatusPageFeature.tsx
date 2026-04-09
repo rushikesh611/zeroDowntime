@@ -115,7 +115,7 @@ export function StatusPageFeature() {
                     <div className="lg:col-span-3">
                         <Card className="border-2 border-gray-200 bg-white overflow-hidden">
                             {/* Status Page Header */}
-                            <div className="p-8 bg-gradient-to-br from-gray-50 to-white border-b border-gray-200">
+                            <div className="p-8 bg-linear-to-br from-gray-50 to-white border-b border-gray-200">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
                                         <div className="w-6 h-6 border-4 border-white rounded-full" />
