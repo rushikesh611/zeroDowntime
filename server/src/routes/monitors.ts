@@ -1,17 +1,11 @@
-import { PrismaClient } from '@prisma/client';
 import express from 'express';
 import auth from '../middleware/auth.js';
-
-import { Resend } from 'resend';
 import { checkEndpoint } from '../services/monitoringService.js';
 import { logger } from '../utils/logger.js';
-
-
-const prisma = new PrismaClient();
-const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 import { MonitorInput } from '../types/monitor.js';
+import prisma from '../lib/prisma.js';
+
+const router = express.Router();
 
 // Create monitor
 router.post('/', auth, async (req, res) => {
@@ -23,7 +17,7 @@ router.post('/', auth, async (req, res) => {
         // Prepare monitor data based on type
         const baseMonitorData = {
             monitorType: monitorData.monitorType,
-            emails: monitorData.emails,
+            notifierId: monitorData.notifierId,
             frequency: monitorData.frequency,
             userId: req.user!.id,
             regions: monitorData.regions
@@ -64,7 +58,8 @@ router.post('/', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
     try {
         const monitors = await prisma.monitor.findMany({
-            where: { userId: req.user?.id }
+            where: { userId: req.user?.id },
+            include: { notifier: true }
         })
         res.json(monitors);
         logger.info('Monitors retrieved successfully:', { monitorsCount: monitors.length });
@@ -79,7 +74,8 @@ router.get('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const monitor = await prisma.monitor.findUnique({
-            where: { id, userId: req.user?.id }
+            where: { id, userId: req.user?.id },
+            include: { notifier: true }
         });
         if (!monitor) {
             return res.status(404).json({ error: 'Monitor not found' });
@@ -96,7 +92,7 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { url, monitorType, method, headers, body, emails, frequency, status, regions, assertions } = req.body;
+        const { url, monitorType, method, headers, body, notifierId, frequency, status, regions, assertions } = req.body;
 
         const monitorData = {
             url,
@@ -104,7 +100,7 @@ router.put('/:id', auth, async (req, res) => {
             method,
             headers: headers || {},
             body: body || null,
-            emails,
+            notifierId,
             frequency,
             status,
             regions,
@@ -113,7 +109,8 @@ router.put('/:id', auth, async (req, res) => {
 
         const updatedMonitor = await prisma.monitor.update({
             where: { id, userId: req.user?.id },
-            data: monitorData
+            data: monitorData,
+            include: { notifier: true }
         });
 
         res.json(updatedMonitor);
@@ -250,34 +247,7 @@ router.get('/:id/logs/day', auth, async (req, res) => {
     }
 });
 
-// send test email
-router.post('/:id/test-email', auth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const monitor = await prisma.monitor.findUnique({
-            where: { id, userId: req.user!.id }
-        });
-        if (!monitor) {
-            return res.status(404).json({ error: 'Monitor not found' });
-        }
-        const { emails } = monitor;
-        const emailSource = process.env.EMAIL_SOURCE || '';
-        const { data, error } = await resend.emails.send({
-            from: emailSource,
-            to: emails,
-            subject: '🚨 Test email from Beacn',
-            text: 'This is a test email from the Beacn service. If you received this email, it means the email service is working correctly.'
-        });
-        if (error) {
-            logger.error('Error sending test email:', error);
-            return res.status(500).json({ error: 'Error sending test email' });
-        }
-        res.json({ message: 'Test email sent successfully' });
-    } catch (error) {
-        logger.error('Error sending test email:', error);
-        res.status(500).json({ error: 'Error sending test email' });
-    }
-});
+
 
 export default router;
 

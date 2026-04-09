@@ -21,7 +21,7 @@ export interface MonitorInput {
   headers?: Record<string, string>;
   body?: string;
   assertions?: Assertion[];
-  emails: string[];
+  notifierId?: string;
   frequency: number;
   regions: string[];
   host?: string;

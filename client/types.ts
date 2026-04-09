@@ -1,7 +1,8 @@
 export interface Monitor {
     id: string;
     url?: string;
-    emails: string[];
+    notifierId?: string;
+    notifier?: Notifier;
     regions: string[];
     frequency: number;
     status: "RUNNING" | "PAUSED";
@@ -41,10 +42,12 @@ export interface StatusPage {
     }
 }
 
+export type NotifierType = 'Email' | 'Webhook';
+
 export interface Notifier {
     id: string;
     name: string;
-    type: 'Email' | 'Webhook';
+    type: NotifierType;
     details: string;
     createdAt: string;
     updatedAt: string;

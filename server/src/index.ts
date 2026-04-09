@@ -16,10 +16,9 @@ import statusPageRoutes from './routes/statuspage.js'
 import testAuthRoutes from './routes/testAuth.js'
 import { logger, logVaultTransport } from './utils/logger.js'
 
-
+import prisma from './lib/prisma.js'
 export const app = express()
 const PORT = process.env.PORT || 3000;
-const prisma = new PrismaClient()
 const isProd = process.env.NODE_ENV === 'production'
 const clientUrl = isProd ? process.env.CLIENT_URL : 'http://localhost:3000';
 

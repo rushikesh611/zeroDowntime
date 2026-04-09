@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { logger } from '../utils/logger.js';
 import * as emailService from './emailService.js';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 export async function getNotifiers(userId: string) {
     return prisma.notifier.findMany({
@@ -82,3 +80,49 @@ export async function sendTestNotification(userId: string, id: string) {
 
     return { success: true };
 }
+
+export async function sendAlert(notifierId: string, url: string, results: any[]) {
+    const notifier = await prisma.notifier.findUnique({
+        where: { id: notifierId }
+    });
+
+    if (!notifier) {
+        logger.error(`sendAlert: Notifier ${notifierId} not found`);
+        return;
+    }
+
+    if (notifier.type === 'Email') {
+        logger.info(`sendAlert: Sending alert email to ${notifier.details}`);
+        await emailService.sendAlert([notifier.details], url, results);
+    } else if (notifier.type === 'Webhook') {
+        logger.info(`sendAlert: Sending alert webhook to ${notifier.details}`);
+
+        const payload = {
+            text: `🚨 *Alert*: ${url} is down!`,
+            event: "monitor_down",
+            monitor: {
+                url,
+                results
+            },
+            notifier: {
+                id: notifier.id,
+                name: notifier.name
+            },
+            timestamp: new Date().toISOString(),
+            message: `The monitor for ${url} has reported a down state from one or more regions.`
+        };
+
+        try {
+            await axios.post(notifier.details, payload, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Beacn-Notifier'
+                },
+                timeout: 5000
+            });
+        } catch (error: any) {
+            logger.error(`sendAlert: Webhook alert failed for ${notifier.details}:`, error.message);
+        }
+    }
+}
+

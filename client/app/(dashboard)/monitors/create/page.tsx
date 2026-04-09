@@ -18,11 +18,13 @@ import { toast } from "@/hooks/use-toast"
 import { fetchWithAuth, parseTcpHost } from '@/lib/utils'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IE, IN, US } from 'country-flag-icons/react/3x2'
-import { ArrowLeft, PlusIcon, Trash2Icon, XIcon } from 'lucide-react'
+import { ArrowLeft, BellIcon, InfoIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import React, { useState } from 'react'
+import React, { useEffect } from 'react'
 import { useFieldArray, useForm } from "react-hook-form"
+import { useAppStore } from '@/store/useAppStore'
 import * as z from "zod"
+import Link from 'next/link'
 
 const assertionSchema = z.object({
   id: z.string(),
@@ -44,7 +46,7 @@ const formSchema = z.object({
   headers: z.array(headerSchema),
   assertions: z.array(assertionSchema),
   tcpHost: z.string().optional(),
-  emails: z.array(z.string().email()),
+  notifierId: z.string().min(1, 'Notification channel is required'),
   frequency: z.coerce.number().min(1, 'Frequency is required'),
   regions: z.array(z.string()).min(1, 'At least one region is required')
 }).superRefine((data, ctx) => {
@@ -59,12 +61,9 @@ const formSchema = z.object({
   } else if (data.monitorType === 'tcp') {
     if (!data.tcpHost) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "TCP Host is required", path: ["tcpHost"] });
-    } else if (!/^(.*):(\\d+)$/.test(data.tcpHost)) {
+    } else if (!/^(.*):(\d+)$/.test(data.tcpHost)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid TCP Host format. Expected host:port", path: ["tcpHost"] });
     }
-  }
-  if (data.emails.length === 0) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least one email is required", path: ["emails"] });
   }
 });
 
@@ -76,7 +75,11 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 
 const Page = () => {
   const router = useRouter()
-  const [emailInput, setEmailInput] = useState('')
+  const { notifiers, fetchNotifiers } = useAppStore()
+
+  useEffect(() => {
+    fetchNotifiers()
+  }, [fetchNotifiers])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -85,7 +88,7 @@ const Page = () => {
       method: 'GET',
       url: '',
       tcpHost: '',
-      emails: [],
+      notifierId: '',
       regions: [],
       headers: [],
       assertions: [],
@@ -94,26 +97,6 @@ const Page = () => {
 
   const { fields: headerFields, append: appendHeader, remove: removeHeader } = useFieldArray({ control: form.control, name: "headers" })
   const { fields: assertionFields, append: appendAssertion, remove: removeAssertion } = useFieldArray({ control: form.control, name: "assertions" })
-
-  const handleAddEmail = () => {
-    if (emailInput) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(emailInput)) {
-        toast({ title: "Invalid Email", description: "Please enter a valid email address", variant: "destructive" });
-        return;
-      }
-      const currentEmails = form.getValues('emails');
-      if (!currentEmails.includes(emailInput)) {
-        form.setValue('emails', [...currentEmails, emailInput], { shouldValidate: true });
-        setEmailInput('');
-      }
-    }
-  }
-
-  const handleRemoveEmail = (email: string) => {
-    const currentEmails = form.getValues('emails');
-    form.setValue('emails', currentEmails.filter(e => e !== email), { shouldValidate: true });
-  }
 
   const onSubmit = async (data: FormValues) => {
     const payload = {
@@ -127,7 +110,7 @@ const Page = () => {
         host: parseTcpHost(data.tcpHost!).host,
         port: parseTcpHost(data.tcpHost!).port
       }),
-      emails: data.emails,
+      notifierId: data.notifierId,
       frequency: data.frequency,
       regions: data.regions
     }
@@ -150,14 +133,14 @@ const Page = () => {
   const monitorType = form.watch('monitorType');
   const watchedUrl = form.watch('url');
   const watchedTcpHost = form.watch('tcpHost');
-  const watchedEmails = form.watch('emails');
+  const watchedNotifierId = form.watch('notifierId');
   const watchedFrequency = form.watch('frequency');
   const watchedRegions = form.watch('regions');
 
   const isFormReady = (() => {
     if (monitorType === 'http' && !watchedUrl) return false;
     if (monitorType === 'tcp' && !watchedTcpHost) return false;
-    if (!watchedEmails || watchedEmails.length === 0) return false;
+    if (!watchedNotifierId) return false;
     if (!watchedFrequency || watchedFrequency < 1) return false;
     if (!watchedRegions || watchedRegions.length === 0) return false;
     return true;
@@ -453,45 +436,70 @@ const Page = () => {
               </div>
             )}
 
-            {/* Notification Emails */}
+            {/* Alert Channel */}
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
-              <SectionLabel>Notification Emails</SectionLabel>
-              <FormField
-                control={form.control}
-                name="emails"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex gap-2 mb-4">
-                      <Input
-                        type="email"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        placeholder="email@example.com"
-                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddEmail())}
-                        className="flex-1 bg-surface-container border-none rounded-xl h-11 font-medium"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddEmail}
-                        className="px-5 py-2 rounded-xl bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-colors"
-                      >
-                        Add
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {field.value.map((email, index) => (
-                        <span key={index} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface text-sm font-medium">
-                          {email}
-                          <button type="button" onClick={() => handleRemoveEmail(email)} className="text-on-surface-variant hover:text-error transition-colors">
-                            <XIcon className="w-3.5 h-3.5" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    <FormMessage className="mt-2" />
-                  </FormItem>
-                )}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <SectionLabel>Alert Channel</SectionLabel>
+                <Link href="/notifications" className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
+                  <PlusIcon className="w-3 h-3" />
+                  Manage Channels
+                </Link>
+              </div>
+
+              {notifiers.length === 0 ? (
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex flex-col items-center text-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <BellIcon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-sm font-bold text-on-surface mb-1">No notification channels found</h3>
+                  <p className="text-xs text-on-surface-variant mb-4 max-w-[240px]">You need to add at least one notification channel (Email or Webhook) before you can create a monitor.</p>
+                  <Button
+                    asChild
+                    variant="default"
+                    className="rounded-xl h-10 px-6 font-bold shadow-md shadow-primary/20"
+                  >
+                    <Link href="/notifications">Create a Channel</Link>
+                  </Button>
+                </div>
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="notifierId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="bg-surface-container border-none rounded-xl h-11 font-semibold">
+                            <SelectValue placeholder="Select a notification channel" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="rounded-2xl border-none shadow-xl">
+                          {notifiers.map((notifier) => (
+                            <SelectItem key={notifier.id} value={notifier.id} className="rounded-xl py-3 px-4">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold flex items-center gap-2">
+                                  {notifier.name}
+                                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-black">
+                                    {notifier.type}
+                                  </span>
+                                </span>
+                                <span className="text-xs font-medium text-on-surface-variant truncate max-w-[300px]">
+                                  {notifier.details}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-xs text-on-surface-variant mt-2 flex items-center gap-1.5">
+                        <InfoIcon className="w-3 h-3 shrink-0" />
+                        Alerts will be sent to this channel when the monitor detects downtime.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             {/* Check Frequency */}

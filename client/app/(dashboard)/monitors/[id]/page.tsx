@@ -9,7 +9,7 @@ import RegionalAvailabilityChart from '@/components/dashboard/regional-availabil
 import RegionalResponseChart from '@/components/dashboard/regional-response-chart';
 import { useAppStore } from '@/store/useAppStore';
 import { Monitor, MonitorLog } from '@/types';
-import { ArrowLeft, Clock, Globe, Mail, PauseIcon, PlayIcon, SendHorizonalIcon, Settings } from 'lucide-react';
+import { ArrowLeft, BellIcon, Clock, Globe, PauseIcon, PlayIcon, Settings } from 'lucide-react';
 
 const MonitorDetailsPage = () => {
   const { id } = useParams() as { id: string };
@@ -111,13 +111,6 @@ const MonitorDetailsPage = () => {
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 pt-1">
                   <button
-                    onClick={() => monitor && handleTestAlert(monitor.id)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-container text-on-surface text-sm font-semibold hover:bg-surface-container-high transition-colors"
-                  >
-                    <SendHorizonalIcon className="w-4 h-4" />
-                    Send Test Alert
-                  </button>
-                  <button
                     onClick={() => {
                       if (!monitor) return;
                       isRunning
@@ -146,19 +139,27 @@ const MonitorDetailsPage = () => {
 
             {/* Info Grid */}
             <div className="grid gap-6 md:grid-cols-2 mt-6 pt-6 border-t border-surface-container-high/50">
-              {/* Email Contacts */}
+              {/* Notification Channel */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest">
-                  <Mail className="w-3.5 h-3.5" />
-                  Email Contacts
+                  <BellIcon className="w-3.5 h-3.5" />
+                  Notification Channel
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {monitor?.emails?.length ? monitor.emails.map((email) => (
-                    <span key={email} className="px-3 py-1.5 rounded-full bg-surface-container text-on-surface text-xs font-medium">
-                      {email}
-                    </span>
-                  )) : (
-                    <span className="text-sm text-on-surface-variant font-medium">No contacts configured</span>
+                  {monitor?.notifier ? (
+                    <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-surface-container border border-surface-container-high w-full">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-on-surface">{monitor.notifier.name}</span>
+                        <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-black">
+                          {monitor.notifier.type}
+                        </span>
+                      </div>
+                      <span className="text-xs text-on-surface-variant font-medium truncate">
+                        {monitor.notifier.details}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-on-surface-variant font-medium">No channel configured</span>
                   )}
                 </div>
               </div>

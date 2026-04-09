@@ -33,7 +33,6 @@ model Monitor {
   headers     Json? // Request headers
   body        String? // Request body
   assertions  Json? // Assertions for status, headers, and body
-  emails      String[]
   frequency   Int         @default(300) // in seconds
   status      String      @default("RUNNING")
   regions     String[]
@@ -41,6 +40,8 @@ model Monitor {
   port        Int?
   user        User        @relation(fields: [userId], references: [id])
   userId      String      @db.ObjectId
+  notifier    Notifier?   @relation(fields: [notifierId], references: [id])
+  notifierId  String?     @db.ObjectId
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   StatusPage  StatusPage?
@@ -91,4 +92,5 @@ model Notifier {
   details   String   // Email address or Webhook URL
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Monitor   Monitor[]
 }

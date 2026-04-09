@@ -1,9 +1,8 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
 import auth from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
+import prisma from '../lib/prisma.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 // create a new status page

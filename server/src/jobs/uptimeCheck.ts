@@ -1,11 +1,9 @@
-import { PrismaClient, MonitorLog, Monitor } from '@prisma/client'
-
+import { MonitorLog, Monitor } from '@prisma/client'
 import cron from 'node-cron'
-import { sendAlert } from '../services/emailService.js'
+import * as notifierService from '../services/notifierService.js'
 import { checkEndpoint } from '../services/monitoringService.js'
 import { logger } from '../utils/logger.js'
-
-const prisma = new PrismaClient()
+import prisma from '../lib/prisma.js'
 
 interface UptimeResult {
     region: string;
@@ -59,7 +57,9 @@ export function startUptimeCheck() {
 
                 if (isDown) {
                     logger.warn(`Endpoint ${monitor.url || monitor.host + ":" + monitor.port} is down`, { timestamp: currentTime, results })
-                    await sendAlert(monitor.emails, monitor.url || monitor.host + ":" + monitor.port || 'Unknown Target', results)
+                    if (monitor.notifierId) {
+                        await notifierService.sendAlert(monitor.notifierId, monitor.url || monitor.host + ":" + monitor.port || 'Unknown Target', results)
+                    }
                 } else {
                     logger.info(`Endpoint ${monitor.url || monitor.host + ":" + monitor.port} is up`, { timestamp: currentTime, monitorType: monitor.monitorType })
                 }
