@@ -361,9 +361,9 @@ const UpdateMonitorPage = () => {
                                                                     <SelectValue />
                                                                 </SelectTrigger>
                                                             </FormControl>
-                                                            <SelectContent>
+                                                            <SelectContent className="rounded-2xl border-none shadow-xl">
                                                                 {['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'].map((method) => (
-                                                                    <SelectItem key={method} value={method} className="rounded-lg">{method}</SelectItem>
+                                                                    <SelectItem key={method} value={method} className="rounded-xl">{method}</SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
@@ -469,10 +469,10 @@ const UpdateMonitorPage = () => {
                                                                                 <SelectValue />
                                                                             </SelectTrigger>
                                                                         </FormControl>
-                                                                        <SelectContent>
-                                                                            <SelectItem value="status" className="rounded-lg">Status</SelectItem>
-                                                                            <SelectItem value="header" className="rounded-lg">Header</SelectItem>
-                                                                            <SelectItem value="body" className="rounded-lg">Body</SelectItem>
+                                                                        <SelectContent className="rounded-2xl border-none shadow-xl">
+                                                                            <SelectItem value="status" className="rounded-xl">Status</SelectItem>
+                                                                            <SelectItem value="header" className="rounded-xl">Header</SelectItem>
+                                                                            <SelectItem value="body" className="rounded-xl">Body</SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
                                                                     <FormMessage />
@@ -486,31 +486,31 @@ const UpdateMonitorPage = () => {
                                                                                 <SelectValue />
                                                                             </SelectTrigger>
                                                                         </FormControl>
-                                                                        <SelectContent>
+                                                                        <SelectContent className="rounded-2xl border-none shadow-xl">
                                                                             {type === 'status' ? (
                                                                                 <>
-                                                                                    <SelectItem value="equals" className="rounded-lg">Equals</SelectItem>
-                                                                                    <SelectItem value="notEquals" className="rounded-lg">Not Equals</SelectItem>
-                                                                                    <SelectItem value="greaterThan" className="rounded-lg">Greater Than</SelectItem>
-                                                                                    <SelectItem value="lessThan" className="rounded-lg">Less Than</SelectItem>
-                                                                                    <SelectItem value="greaterThanOrEqual" className="rounded-lg">Greater Than or Equal</SelectItem>
-                                                                                    <SelectItem value="lessThanOrEqual" className="rounded-lg">Less Than or Equal</SelectItem>
+                                                                                    <SelectItem value="equals" className="rounded-xl">Equals</SelectItem>
+                                                                                    <SelectItem value="notEquals" className="rounded-xl">Not Equals</SelectItem>
+                                                                                    <SelectItem value="greaterThan" className="rounded-xl">Greater Than</SelectItem>
+                                                                                    <SelectItem value="lessThan" className="rounded-xl">Less Than</SelectItem>
+                                                                                    <SelectItem value="greaterThanOrEqual" className="rounded-xl">Greater Than or Equal</SelectItem>
+                                                                                    <SelectItem value="lessThanOrEqual" className="rounded-xl">Less Than or Equal</SelectItem>
                                                                                 </>
                                                                             ) : type === 'header' ? (
                                                                                 <>
-                                                                                    <SelectItem value="equals" className="rounded-lg">Equals</SelectItem>
-                                                                                    <SelectItem value="notEquals" className="rounded-lg">Not Equals</SelectItem>
-                                                                                    <SelectItem value="contains" className="rounded-lg">Contains</SelectItem>
-                                                                                    <SelectItem value="notContains" className="rounded-lg">Not Contains</SelectItem>
-                                                                                    <SelectItem value="matches" className="rounded-lg">Matches (Regex)</SelectItem>
+                                                                                    <SelectItem value="equals" className="rounded-xl">Equals</SelectItem>
+                                                                                    <SelectItem value="notEquals" className="rounded-xl">Not Equals</SelectItem>
+                                                                                    <SelectItem value="contains" className="rounded-xl">Contains</SelectItem>
+                                                                                    <SelectItem value="notContains" className="rounded-xl">Not Contains</SelectItem>
+                                                                                    <SelectItem value="matches" className="rounded-xl">Matches (Regex)</SelectItem>
                                                                                 </>
                                                                             ) : (
                                                                                 <>
-                                                                                    <SelectItem value="contains" className="rounded-lg">Contains</SelectItem>
-                                                                                    <SelectItem value="notContains" className="rounded-lg">Not Contains</SelectItem>
-                                                                                    <SelectItem value="equals" className="rounded-lg">Equals</SelectItem>
-                                                                                    <SelectItem value="notEquals" className="rounded-lg">Not Equals</SelectItem>
-                                                                                    <SelectItem value="matches" className="rounded-lg">Matches (Regex)</SelectItem>
+                                                                                    <SelectItem value="contains" className="rounded-xl">Contains</SelectItem>
+                                                                                    <SelectItem value="notContains" className="rounded-xl">Not Contains</SelectItem>
+                                                                                    <SelectItem value="equals" className="rounded-xl">Equals</SelectItem>
+                                                                                    <SelectItem value="notEquals" className="rounded-xl">Not Equals</SelectItem>
+                                                                                    <SelectItem value="matches" className="rounded-xl">Matches (Regex)</SelectItem>
                                                                                 </>
                                                                             )}
                                                                         </SelectContent>
@@ -637,12 +637,12 @@ const UpdateMonitorPage = () => {
                                                     <SelectValue placeholder="Select frequency" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="300" className="rounded-lg">Every 5 minutes</SelectItem>
-                                                <SelectItem value="600" className="rounded-lg">Every 10 minutes</SelectItem>
-                                                <SelectItem value="900" className="rounded-lg">Every 15 minutes</SelectItem>
-                                                <SelectItem value="1800" className="rounded-lg">Every 30 minutes</SelectItem>
-                                            </SelectContent>
+                                            <SelectContent className="rounded-2xl border-none shadow-xl">
+                                                    <SelectItem value="300" className="rounded-xl">Every 5 minutes</SelectItem>
+                                                    <SelectItem value="600" className="rounded-xl">Every 10 minutes</SelectItem>
+                                                    <SelectItem value="900" className="rounded-xl">Every 15 minutes</SelectItem>
+                                                    <SelectItem value="1800" className="rounded-xl">Every 30 minutes</SelectItem>
+                                                </SelectContent>
                                         </Select>
                                         <FormMessage />
                                     </FormItem>

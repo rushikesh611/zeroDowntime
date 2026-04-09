@@ -44,15 +44,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     return (
         <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader className="p-3">
+            <SidebarHeader className="transition-all duration-300">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="rounded-xl hover:bg-sidebar-accent">
+                        <SidebarMenuButton size="lg" asChild className="rounded-xl hover:bg-sidebar-accent group-data-[state=collapsed]:justify-center transition-all">
                             <Link href="/monitors">
-                                <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dim text-white shadow-sm shadow-primary/20">
-                                    <TowerControl className="size-4" />
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dim text-white shadow-sm shadow-primary/20 transition-all duration-200">
+                                    <TowerControl className="size-4 shrink-0" />
                                 </div>
-                                <div className="grid flex-1 text-left text-sm leading-tight">
+                                <div className="grid flex-1 text-left text-sm leading-tight group-data-[state=collapsed]:hidden">
                                     <span className="truncate font-bold text-sidebar-foreground">Beacn</span>
                                     <span className="truncate text-[11px] text-sidebar-foreground/50">Monitoring</span>
                                 </div>
@@ -62,11 +62,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarSeparator className="mx-3" />
+            <SidebarSeparator className="mx-3 group-data-[state=collapsed]:mx-2 transition-all duration-200" />
 
-            <SidebarContent className="pt-1">
+            <SidebarContent>
                 {mainMenus.map((group, index) => (
-                    <SidebarGroup key={index} className="px-3 py-1">
+                    <SidebarGroup key={index}>
                         {group.groupLabel && (
                             <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-widest text-sidebar-foreground/40 px-2 mb-0.5">
                                 {group.groupLabel}
@@ -88,10 +88,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                             >
                                                 <SidebarMenuItem>
                                                     <CollapsibleTrigger asChild>
-                                                        <SidebarMenuButton tooltip={item.label} isActive={isActive} className="rounded-lg">
-                                                            {Icon && <Icon className="size-4" />}
-                                                            <span className="font-medium">{item.label}</span>
-                                                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                                        <SidebarMenuButton tooltip={item.label} isActive={isActive} className="rounded-lg group-data-[state=collapsed]:justify-center transition-all duration-200">
+                                                            {Icon && <Icon className="size-4 shrink-0" />}
+                                                            <span className="font-medium group-data-[state=collapsed]:hidden">{item.label}</span>
+                                                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[state=collapsed]:hidden" />
                                                         </SidebarMenuButton>
                                                     </CollapsibleTrigger>
                                                     <CollapsibleContent>
@@ -121,18 +121,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                                 asChild={!item.disabled}
                                                 isActive={isActive}
                                                 tooltip={item.label}
-                                                className={`rounded-lg ${item.disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+                                                className={`rounded-lg group-data-[state=collapsed]:justify-center transition-all duration-200 ${item.disabled ? "opacity-40 cursor-not-allowed" : ""}`}
                                             >
                                                 {item.disabled ? (
                                                     <>
-                                                        {Icon && <Icon className="size-4" />}
-                                                        <span className="font-medium">{item.label}</span>
-                                                        <SidebarMenuBadge className="text-[10px] bg-surface-container-high rounded-md px-1.5 py-0.5">Soon</SidebarMenuBadge>
+                                                        {Icon && <Icon className="size-4 shrink-0" />}
+                                                        <span className="font-medium group-data-[state=collapsed]:hidden">{item.label}</span>
+                                                        <SidebarMenuBadge className="text-[10px] bg-surface-container-high rounded-md px-1.5 py-0.5 group-data-[state=collapsed]:hidden">Soon</SidebarMenuBadge>
                                                     </>
                                                 ) : (
                                                     <Link href={item.href}>
-                                                        {Icon && <Icon className="size-4" />}
-                                                        <span className="font-medium">{item.label}</span>
+                                                        {Icon && <Icon className="size-4 shrink-0" />}
+                                                        <span className="font-medium group-data-[state=collapsed]:hidden">{item.label}</span>
                                                     </Link>
                                                 )}
                                             </SidebarMenuButton>
@@ -145,7 +145,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 ))}
 
                 {settingsMenus && (
-                    <SidebarGroup className="mt-auto px-3 py-1">
+                    <SidebarGroup className="mt-auto">
                         <SidebarSeparator className="mb-2" />
                         <SidebarGroupLabel className="text-[11px] font-bold uppercase tracking-widest text-sidebar-foreground/40 px-2 mb-0.5">
                             {settingsMenus.groupLabel}
@@ -161,11 +161,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                                 asChild
                                                 isActive={isActive}
                                                 tooltip={item.label}
-                                                className="rounded-lg"
+                                                className="rounded-lg group-data-[state=collapsed]:justify-center transition-all duration-200"
                                             >
                                                 <Link href={item.href}>
-                                                    {Icon && <Icon className="size-4" />}
-                                                    <span className="font-medium">{item.label}</span>
+                                                    {Icon && <Icon className="size-4 shrink-0" />}
+                                                    <span className="font-medium group-data-[state=collapsed]:hidden">{item.label}</span>
                                                 </Link>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
@@ -176,7 +176,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarGroup>
                 )}
             </SidebarContent>
-            <SidebarFooter className="p-3">
+            <SidebarFooter className="transition-all duration-300">
                 <NavUser />
             </SidebarFooter>
             <SidebarRail />

@@ -40,3 +40,12 @@ export interface StatusPage {
         status: "RUNNING" | "PAUSED";
     }
 }
+
+export interface Notifier {
+    id: string;
+    name: string;
+    type: 'Email' | 'Webhook';
+    details: string;
+    createdAt: string;
+    updatedAt: string;
+}

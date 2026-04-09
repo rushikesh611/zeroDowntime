@@ -265,8 +265,8 @@ router.post('/:id/test-email', auth, async (req, res) => {
         const { data, error } = await resend.emails.send({
             from: emailSource,
             to: emails,
-            subject: '🚨 Test email from ZeroDowntime',
-            text: 'This is a test email from the ZeroDowntime service. If you received this email, it means the email service is working correctly.'
+            subject: '🚨 Test email from Beacn',
+            text: 'This is a test email from the Beacn service. If you received this email, it means the email service is working correctly.'
         });
         if (error) {
             logger.error('Error sending test email:', error);

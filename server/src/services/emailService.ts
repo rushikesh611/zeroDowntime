@@ -8,16 +8,12 @@ export async function sendAlert(emails: string[], url: string, results: any[]) {
 
     try {
         logger.info(`emailService: Sending alert email to: ${emails.join(', ')}`);
-        // const { data, error } = await resend.emails.send({
-        //     from: emailSource,
-        //     to: emails,
-        //     subject: `🚨Alert: ${url} is down`,
-        //     text: `The website ${url} is down. Results: ${JSON.stringify(results)}`
-        // })
-
-        const error = null;
-        const data = { id: 'mock-email-id' };
-        console.log('Pretending to send email alert...');
+        const { data, error } = await resend.emails.send({
+            from: emailSource,
+            to: emails,
+            subject: `🚨Alert: ${url} is down`,
+            text: `The website ${url} is down. Results: ${JSON.stringify(results)}`
+        })
 
         if (error) {
             logger.error('emailService: Error sending email alert:', error);
@@ -25,6 +21,31 @@ export async function sendAlert(emails: string[], url: string, results: any[]) {
             logger.info(`emailService: Alert sent to ${emails.join(', ')}. Message ID: ${data?.id}`);
         }
     } catch (error) {
-        logger.error('emailService: Error sending email alert:', error);
+        logger.error('emailService: Catch error sending email alert:', error);
+    }
+}
+
+export async function sendCustomEmail(emails: string[], subject: string, text: string) {
+    const emailSource = process.env.EMAIL_SOURCE || '';
+
+    try {
+        logger.info(`emailService: Sending custom email to: ${emails.join(', ')}`);
+        const { data, error } = await resend.emails.send({
+            from: emailSource,
+            to: emails,
+            subject,
+            text
+        })
+
+        if (error) {
+            logger.error('emailService: Error sending custom email:', error);
+            throw error;
+        }
+        
+        logger.info(`emailService: Custom email sent. Message ID: ${data?.id}`);
+        return data;
+    } catch (error) {
+        logger.error('emailService: Catch error sending custom email:', error);
+        throw error;
     }
 }

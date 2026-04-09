@@ -145,7 +145,7 @@ const MonitorDetailsPage = () => {
             </div>
 
             {/* Info Grid */}
-            <div className="grid gap-5 md:grid-cols-2 mt-6 pt-6 border-t border-surface-variant/40">
+            <div className="grid gap-6 md:grid-cols-2 mt-6 pt-6 border-t border-surface-container-high/50">
               {/* Email Contacts */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest">

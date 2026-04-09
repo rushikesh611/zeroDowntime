@@ -11,6 +11,7 @@ import { startUptimeCheck } from './jobs/uptimeCheck.js'
 import authRoutes from './routes/auth.js'
 import logRoutes from './routes/logSource.js'
 import monitorRoutes from './routes/monitors.js'
+import notifierRoutes from './routes/notifiers.js'
 import statusPageRoutes from './routes/statuspage.js'
 import testAuthRoutes from './routes/testAuth.js'
 import { logger, logVaultTransport } from './utils/logger.js'
@@ -70,6 +71,7 @@ app.use(passport.session());
 app.use('/api/auth', authRoutes)
 app.use('/api', testAuthRoutes)
 app.use('/api/monitors', monitorRoutes)
+app.use('/api/notifiers', notifierRoutes)
 app.use('/api/log', logRoutes)
 app.use('/api/status-pages', statusPageRoutes);
 
