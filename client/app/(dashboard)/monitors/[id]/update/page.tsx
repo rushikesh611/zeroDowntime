@@ -40,6 +40,7 @@ const headerSchema = z.object({
 })
 
 const formSchema = z.object({
+    name: z.string().optional(),
     monitorType: z.enum(['http', 'tcp']),
     url: z.string().optional(),
     method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']),
@@ -101,6 +102,7 @@ const UpdateMonitorPage = () => {
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            name: '',
             monitorType: 'http',
             method: 'GET',
             url: '',
@@ -160,6 +162,7 @@ const UpdateMonitorPage = () => {
                 }
 
                 form.reset({
+                    name: data.name || '',
                     monitorType: type,
                     method: data.method || 'GET',
                     url: data.url || '',
@@ -188,6 +191,7 @@ const UpdateMonitorPage = () => {
 
     const onSubmit = async (data: FormValues) => {
         const payload = {
+            name: data.name,
             monitorType: data.monitorType,
             ...(data.monitorType === 'http' ? {
                 method: data.method,
@@ -278,6 +282,30 @@ const UpdateMonitorPage = () => {
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+                        {/* Monitor Name */}
+                        <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+                            <SectionLabel>Monitor Name</SectionLabel>
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="My Website Monitor"
+                                                className="bg-surface-container border-none rounded-xl h-11 font-medium focus:bg-surface-container-high transition-colors"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormDescription className="text-xs text-on-surface-variant mt-2">
+                                            An optional name to identify your monitor easily.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         {/* Monitor Type */}
                         <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">

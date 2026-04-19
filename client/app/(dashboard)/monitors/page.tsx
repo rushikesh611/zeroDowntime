@@ -1,8 +1,6 @@
 'use client'
 
 import { ContentLayout } from "@/components/dashboard/content-layout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +19,6 @@ import {
   PlayIcon,
   Plus,
   TrashIcon,
-  Globe,
   Wifi,
   WifiOff
 } from 'lucide-react';
@@ -160,10 +157,10 @@ const MonitorsPage = () => {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-on-surface truncate">
-                        {monitor.url || `${monitor.host}:${monitor.port}`}
+                        {monitor.name || monitor.url || `${monitor.host}:${monitor.port}`}
                       </p>
                       <p className="text-xs text-on-surface-variant truncate">
-                        {monitor.url ? 'HTTP Monitor' : 'TCP Monitor'}
+                        {monitor.name ? (monitor.url || `${monitor.host}:${monitor.port}`) : (monitor.url ? 'HTTP Monitor' : 'TCP Monitor')}
                       </p>
                     </div>
                   </div>

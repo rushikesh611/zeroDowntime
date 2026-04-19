@@ -15,6 +15,7 @@ export interface Assertion {
 
 // Monitor Input Type
 export interface MonitorInput {
+  name?: string;
   url?: string;
   monitorType: MonitorType;
   method?: HttpMethod;

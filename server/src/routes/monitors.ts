@@ -16,6 +16,7 @@ router.post('/', auth, async (req, res) => {
         console.log('Received monitor data:', monitorData);
         // Prepare monitor data based on type
         const baseMonitorData = {
+            name: monitorData.name,
             monitorType: monitorData.monitorType,
             notifierId: monitorData.notifierId,
             frequency: monitorData.frequency,
@@ -92,9 +93,10 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { url, monitorType, method, headers, body, notifierId, frequency, status, regions, assertions } = req.body;
+        const { name, url, monitorType, method, headers, body, notifierId, frequency, status, regions, assertions } = req.body;
 
         const monitorData = {
+            name,
             url,
             monitorType,
             method,
@@ -179,12 +181,17 @@ router.post('/:id/check', auth, async (req, res) => {
     }
 });
 
-// Get monitor logs
+// Get monitor logs (last 24 hours only for performance)
 router.get('/:id/logs', auth, async (req, res) => {
     try {
         const { id } = req.params;
+        const twentyFourHoursAgo = new Date(Date.now() - 86400000);
+        
         const logs = await prisma.monitorLog.findMany({
-            where: { monitorId: id },
+            where: { 
+                monitorId: id,
+                lastCheckedAt: { gte: twentyFourHoursAgo }
+            },
             orderBy: { lastCheckedAt: 'desc' }
         });
         res.json(logs);
@@ -248,6 +255,47 @@ router.get('/:id/logs/day', auth, async (req, res) => {
 });
 
 
+// Get monitor stats (avg, p95, p99) for last 24h
+router.get('/:id/stats', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const twentyFourHoursAgo = new Date(Date.now() - 86400000);
+
+        // Fetch only responseTime to minimize payload from DB
+        const logs = await prisma.monitorLog.findMany({
+            where: { 
+                monitorId: id, 
+                lastCheckedAt: { gte: twentyFourHoursAgo },
+                responseTime: { gt: 0 } // Only consider valid responses
+            },
+            select: { responseTime: true }
+        });
+
+        if (logs.length === 0) {
+            return res.json({ avg: 0, p95: 0, p99: 0, count: 0 });
+        }
+
+        const times = logs.map(l => l.responseTime).sort((a, b) => a - b);
+        const count = times.length;
+        const sum = times.reduce((a, b) => a + b, 0);
+        const avg = Math.round(sum / count);
+
+        const getPercentile = (p: number) => {
+            const index = Math.ceil((p / 100) * count) - 1;
+            return times[index];
+        };
+
+        res.json({
+            avg,
+            p95: getPercentile(95),
+            p99: getPercentile(99),
+            count
+        });
+    } catch (error) {
+        logger.error('Error getting monitor stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 export default router;
 

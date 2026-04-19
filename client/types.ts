@@ -1,5 +1,6 @@
 export interface Monitor {
     id: string;
+    name?: string;
     url?: string;
     notifierId?: string;
     notifier?: Notifier;

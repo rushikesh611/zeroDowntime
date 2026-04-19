@@ -27,6 +27,7 @@ model User {
 
 model Monitor {
   id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String?
   url         String?
   monitorType String      @default("http") // "http" or "tcp"
   method      String? // HTTP method (GET, POST, etc.)

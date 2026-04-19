@@ -9,12 +9,13 @@ import RegionalAvailabilityChart from '@/components/dashboard/regional-availabil
 import RegionalResponseChart from '@/components/dashboard/regional-response-chart';
 import { useAppStore } from '@/store/useAppStore';
 import { Monitor, MonitorLog } from '@/types';
-import { ArrowLeft, BellIcon, Clock, Globe, PauseIcon, PlayIcon, Settings } from 'lucide-react';
+import { Activity, ArrowLeft, BellIcon, Clock, Globe, PauseIcon, PlayIcon, Settings } from 'lucide-react';
 
 const MonitorDetailsPage = () => {
   const { id } = useParams() as { id: string };
   const [monitor, setMonitor] = useState<Monitor | null>(null);
   const [monitorLogs, setMonitorLogs] = useState<MonitorLog[]>([]);
+  const [stats, setStats] = useState<{ avg: number, p95: number, p99: number, count: number } | null>(null);
   const { pauseMonitor, startMonitor, fetchMonitorById } = useAppStore();
   const router = useRouter();
 
@@ -34,7 +35,29 @@ const MonitorDetailsPage = () => {
         console.error('Error fetching data:', error);
       }
     };
+
+    const fetchStats = async () => {
+        try {
+          const response = await fetchWithAuth(`/api/monitors/${id}/stats`);
+          if (response.ok) {
+            const result = await response.json();
+            setStats(result);
+          }
+        } catch (error) {
+          console.error('Error fetching stats:', error);
+        }
+      };
+
     fetchData();
+    fetchStats();
+
+    // Set up polling for real-time updates
+    const intervalId = setInterval(() => {
+      fetchData();
+      fetchStats();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
   }, [id, fetchMonitorById]);
 
   const handleConfigure = (monitorId: string) => router.push(`/monitors/${monitorId}/update`);
@@ -44,6 +67,10 @@ const MonitorDetailsPage = () => {
   };
 
   const isRunning = monitor?.status === 'RUNNING';
+
+  const avgResponseTime = stats?.avg || 0;
+  const p95 = stats?.p95 || 0;
+  const p99 = stats?.p99 || 0;
 
   return (
     <ContentLayout>
@@ -87,8 +114,13 @@ const MonitorDetailsPage = () => {
               <div className="flex-1 min-w-0 space-y-2">
                 <div>
                   <h1 className="text-lg font-semibold text-on-surface tracking-tight break-all">
-                    {monitor?.url || `${monitor?.host}:${monitor?.port}`}
+                    {monitor?.name || monitor?.url || `${monitor?.host}:${monitor?.port}`}
                   </h1>
+                  {monitor?.name && (
+                    <p className="text-xs font-medium text-on-surface-variant break-all mt-0.5 opacity-80">
+                      {monitor?.url || `${monitor?.host}:${monitor?.port}`}
+                    </p>
+                  )}
                   <div className="flex flex-wrap items-center gap-3 mt-2">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
                       isRunning
@@ -181,6 +213,52 @@ const MonitorDetailsPage = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Performance Summary */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-[11px] font-black text-on-surface-variant uppercase tracking-[0.2em]">Performance Summary</h2>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-primary/70 text-[10px] font-bold border border-primary/10">
+              <Clock className="w-3 h-3" />
+              Last 24 Hours
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-surface-container-high/40 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform">
+              <Activity className="w-8 h-8 text-on-surface" />
+            </div>
+            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2">Avg Latency</p>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-bold text-on-surface tracking-tight">{avgResponseTime}</span>
+              <span className="text-sm font-bold text-on-surface-variant/70">ms</span>
+            </div>
+          </div>
+          
+          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-surface-container-high/40 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform text-secondary">
+                  <Activity className="w-8 h-8" />
+              </div>
+            <p className="text-[10px] font-black text-secondary/80 uppercase tracking-[0.2em] mb-2">p95 Latency</p>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-bold text-secondary tracking-tight">{p95}</span>
+              <span className="text-sm font-bold text-on-surface-variant/70">ms</span>
+            </div>
+          </div>
+
+          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-surface-container-high/40 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform text-primary">
+                  <Activity className="w-8 h-8" />
+              </div>
+            <p className="text-[10px] font-black text-primary/80 uppercase tracking-[0.2em] mb-2">p99 Latency</p>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-bold text-primary tracking-tight">{p99}</span>
+              <span className="text-sm font-bold text-on-surface-variant/70">ms</span>
+            </div>
+          </div>
           </div>
         </div>
 
