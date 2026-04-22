@@ -187,7 +187,7 @@ router.get('/public/:subdomain', async (req, res) => {
   try {
     const { subdomain } = req.params;
 
-    const statusPage = await prisma.statusPage.findUnique({
+    const statusPage = await prisma.statusPage.findFirst({
       where: {
         subdomain,
         isPublic: true

@@ -21,15 +21,15 @@ router.get('/github/callback',
         }
 
         const user = req.user as User;
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || '$2a$04$Ls3wM2PzVdm.08FoS3sv3uANW.EkuhFhNdSeuBNpKkXInkXumGgkm',
-            { expiresIn: '1h' }
+        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string,
+            { expiresIn: '24h' }
         );
 
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 3600000,
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000,
         });
         logger.info('User logged in successfully', {
             userId: user.id,
@@ -55,15 +55,15 @@ router.get('/google/callback',
         }
 
         const user = req.user as User;
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || '$2a$04$Ls3wM2PzVdm.08FoS3sv3uANW.EkuhFhNdSeuBNpKkXInkXumGgkm',
-            { expiresIn: '1h' }
+        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string,
+            { expiresIn: '24h' }
         );
 
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 3600000,
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000,
         });
         logger.info('User logged in successfully', {
             userId: user.id,

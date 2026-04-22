@@ -9,6 +9,7 @@ type User = {
   username: string;
   email: string;
   avatarUrl: string;
+  plan: 'FREE' | 'PRO' | 'PRO_PLUS';
 }
 
 interface AppStore {

@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation"
 import * as React from "react"
 
 import { NavUser } from "@/components/nav-user"
+import { useAppStore } from "@/store/useAppStore"
 import {
     Collapsible,
     CollapsibleContent,
@@ -36,7 +37,8 @@ import { getMenuList } from "@/lib/menu-list"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname()
-    const menuList = getMenuList(pathname)
+    const { user } = useAppStore()
+    const menuList = getMenuList(pathname, user)
 
     // Separate main navigation from settings
     const mainMenus = menuList.filter((group) => group.groupLabel !== "Settings")

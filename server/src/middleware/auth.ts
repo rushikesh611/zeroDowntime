@@ -41,6 +41,6 @@ export default async function auth(req: Request, res: Response, next: NextFuncti
     next();
   } catch (error) {
     logger.error('Authentication error:', error);
-    return res.status(400).json({ error: 'Invalid token.' });
+    return res.status(401).json({ error: 'Invalid token.' });
   }
 }

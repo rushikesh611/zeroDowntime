@@ -17,6 +17,8 @@ export interface Monitor {
     body?: string;
     assertions?: any[];
     monitorType: "string";
+    role?: "OWNER" | "READ" | "WRITE";
+    ownerName?: string;
 }
 
 

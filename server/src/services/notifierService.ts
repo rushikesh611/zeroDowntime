@@ -20,20 +20,24 @@ export async function createNotifier(userId: string, data: { name: string, type:
 }
 
 export async function updateNotifier(userId: string, id: string, data: { name?: string, type?: string, details?: string }) {
-    return prisma.notifier.update({
+    const result = await prisma.notifier.updateMany({
         where: { id, userId },
         data
     });
+    if (result.count === 0) throw new Error('Notifier not found or not owned by you');
+    return result;
 }
 
 export async function deleteNotifier(userId: string, id: string) {
-    return prisma.notifier.delete({
+    const result = await prisma.notifier.deleteMany({
         where: { id, userId }
     });
+    if (result.count === 0) throw new Error('Notifier not found or not owned by you');
+    return result;
 }
 
 export async function sendTestNotification(userId: string, id: string) {
-    const notifier = await prisma.notifier.findUnique({
+    const notifier = await prisma.notifier.findFirst({
         where: { id, userId }
     });
 

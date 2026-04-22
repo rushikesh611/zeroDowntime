@@ -14,6 +14,9 @@ import monitorRoutes from './routes/monitors.js'
 import notifierRoutes from './routes/notifiers.js'
 import statusPageRoutes from './routes/statuspage.js'
 import testAuthRoutes from './routes/testAuth.js'
+import stripeRoutes from './routes/stripe.js'
+import stripeWebhookRoutes from './routes/stripeWebhook.js'
+import teamRoutes from './routes/teams.js'
 import { logger, logVaultTransport } from './utils/logger.js'
 
 import prisma from './lib/prisma.js'
@@ -45,6 +48,8 @@ const limiter = rateLimit({
 
 app.disable('x-powered-by')
 
+// Webhook must be mounted BEFORE express.json() because it needs the raw body
+app.use('/api/stripe/webhook', stripeWebhookRoutes)
 
 // Middleware
 app.use(helmet())
@@ -73,6 +78,8 @@ app.use('/api/monitors', monitorRoutes)
 app.use('/api/notifiers', notifierRoutes)
 app.use('/api/log', logRoutes)
 app.use('/api/status-pages', statusPageRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/teams', teamRoutes);
 
 app.get('/', (req: any, res: any) => {
   res.send('Zero Downtime')

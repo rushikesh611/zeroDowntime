@@ -63,11 +63,26 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
         return () => clearInterval(interval);
     }, []);
 
-    const regionColors: RegionColors = {
-        'us-east-1': 'hsl(var(--chart-1))',
-        'eu-west-1': 'hsl(var(--chart-2))',
-        'ap-south-1': 'hsl(var(--chart-3))'
-    };
+    const regions = useMemo(() => {
+        const uniqueRegions = new Set<string>();
+        data.forEach(log => uniqueRegions.add(log.region));
+        return Array.from(uniqueRegions);
+    }, [data]);
+
+    const regionColors = useMemo((): RegionColors => {
+        const colors = [
+            'hsl(var(--chart-1))',
+            'hsl(var(--chart-2))',
+            'hsl(var(--chart-3))',
+            'hsl(var(--chart-4))',
+            'hsl(var(--chart-5))',
+        ];
+        const mapping: RegionColors = {};
+        regions.forEach((region, i) => {
+            mapping[region] = colors[i % colors.length];
+        });
+        return mapping;
+    }, [regions]);
 
     const processedData = useMemo((): ProcessedDataPoint[] => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -86,58 +101,38 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
             new Date(a.lastCheckedAt).getTime() - new Date(b.lastCheckedAt).getTime()
         );
 
-        const timeseriesData: ProcessedDataPoint[] = [];
-        const seenTimestamps = new Set<number>();
+        // Group by timestamp
+        const dataByTimestamp: Record<number, ProcessedDataPoint> = {};
 
         sortedData.forEach(item => {
             const timestamp = new Date(item.lastCheckedAt).getTime();
 
-            if (!seenTimestamps.has(timestamp)) {
-                const dataPoint: ProcessedDataPoint = {
-                    timestamp,
-                    'us-east-1': null,
-                    'eu-west-1': null,
-                    'ap-south-1': null
-                };
-                timeseriesData.push(dataPoint);
-                seenTimestamps.add(timestamp);
+            if (!dataByTimestamp[timestamp]) {
+                dataByTimestamp[timestamp] = { timestamp } as ProcessedDataPoint;
+                regions.forEach(r => dataByTimestamp[timestamp][r] = null);
             }
 
-            const dataPoint = timeseriesData.find(d => d.timestamp === timestamp);
-            if (dataPoint && Object.hasOwn(dataPoint, item.region)) {
-                dataPoint[item.region] = item.isUp ? 1 : 0;
-            }
+            dataByTimestamp[timestamp][item.region] = item.status === 'UP' ? 1 : 0;
         });
 
-        if (!seenTimestamps.has(currentTime.getTime())) {
-            timeseriesData.push({
-                timestamp: currentTime.getTime(),
-                'us-east-1': null,
-                'eu-west-1': null,
-                'ap-south-1': null
-            });
+        const timeseriesData = Object.values(dataByTimestamp).sort((a, b) => a.timestamp - b.timestamp);
+
+        // Add current time point
+        if (timeseriesData.length > 0 && timeseriesData[timeseriesData.length - 1].timestamp < currentTime.getTime()) {
+            const lastPoint = { timestamp: currentTime.getTime() } as ProcessedDataPoint;
+            regions.forEach(r => lastPoint[r] = null);
+            timeseriesData.push(lastPoint);
         }
 
         return timeseriesData;
-    }, [data, selectedRange, currentTime]);
+    }, [data, selectedRange, currentTime, regions]);
 
     const uptime = useMemo(() => {
-        if (!processedData.length) return 0;
-
-        let totalChecks = 0;
-        let upChecks = 0;
-
-        processedData.forEach(point => {
-            Object.keys(regionColors).forEach(region => {
-                if (point[region] !== null) {
-                    totalChecks++;
-                    if (point[region] === 1) upChecks++;
-                }
-            });
-        });
-
+        if (!data.length) return 0;
+        let totalChecks = data.length;
+        let upChecks = data.filter(log => log.status === 'UP').length;
         return totalChecks > 0 ? ((upChecks / totalChecks) * 100).toFixed(1) : 0;
-    }, [processedData, regionColors]);
+    }, [data]);
 
     const formatXAxis = (timestamp: number): string => {
         const date = new Date(timestamp);

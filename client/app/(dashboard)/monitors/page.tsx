@@ -130,14 +130,13 @@ const MonitorsPage = () => {
               </button>
             </div>
           ) : (
-            <div className="space-y-0.5">
-              {/* Table Header */}
-              <div className="grid grid-cols-12 px-4 py-2 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">
-                <div className="col-span-4">Name</div>
-                <div className="col-span-2">Type</div>
+            <div className="space-y-1">
+              {/* Table Header - Hidden on small screens */}
+              <div className="hidden md:grid grid-cols-12 px-4 py-3 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest border-b border-surface-container-high/30">
+                <div className="col-span-5">Monitor</div>
                 <div className="col-span-2">Status</div>
+                <div className="col-span-2">Type</div>
                 <div className="col-span-2">Frequency</div>
-                <div className="col-span-1">Created</div>
                 <div className="col-span-1 text-right">Actions</div>
               </div>
               {/* Rows */}
@@ -145,35 +144,52 @@ const MonitorsPage = () => {
                 <div
                   key={monitor.id}
                   onClick={() => handleMonitorClick(monitor.id)}
-                  className="grid grid-cols-12 items-center px-4 py-3 bg-surface-container-lowest rounded-xl cursor-pointer hover:bg-white hover:shadow-sm transition-all duration-150 group"
+                  className="flex flex-col md:grid md:grid-cols-12 items-start md:items-center px-4 py-4 md:py-3 bg-surface-container-lowest rounded-2xl md:rounded-xl cursor-pointer hover:bg-white hover:shadow-sm transition-all duration-150 group gap-3 md:gap-0"
                 >
-                  {/* Name */}
-                  <div className="col-span-4 flex items-center gap-3 min-w-0">
+                  {/* Name & Type (Mobile only) */}
+                  <div className="col-span-5 flex items-center gap-3 min-w-0 w-full">
                     <div className="relative shrink-0">
                       <div className={`w-2.5 h-2.5 rounded-full ${monitor.status === 'RUNNING' ? 'bg-secondary' : 'bg-tertiary'}`} />
                       {monitor.status === 'RUNNING' && (
                         <div className="absolute inset-0 rounded-full bg-secondary animate-ping opacity-50" />
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-on-surface truncate">
-                        {monitor.name || monitor.url || `${monitor.host}:${monitor.port}`}
-                      </p>
-                      <p className="text-xs text-on-surface-variant truncate">
-                        {monitor.name ? (monitor.url || `${monitor.host}:${monitor.port}`) : (monitor.url ? 'HTTP Monitor' : 'TCP Monitor')}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-on-surface truncate">
+                          {monitor.name || monitor.url || `${monitor.host}:${monitor.port}`}
+                        </p>
+                        <span className="md:hidden inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[9px] font-black uppercase tracking-wider">
+                          {monitor.url ? 'HTTP' : 'TCP'}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                        <p className="text-xs text-on-surface-variant truncate opacity-80">
+                          {monitor.name ? (monitor.url || `${monitor.host}:${monitor.port}`) : (monitor.url ? 'HTTP Monitor' : 'TCP Monitor')}
+                        </p>
+                        {monitor.role !== 'OWNER' && monitor.ownerName && (
+                          <span className="text-[9px] bg-primary/10 px-1.5 py-0.5 rounded-md text-primary font-bold">
+                            {monitor.ownerName}'s
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Mobile Status - shown on right side on mobile */}
+                    <div className="md:hidden shrink-0">
+                        {monitor.status === 'RUNNING' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold">
+                            UP
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary text-[10px] font-bold">
+                            PAUSED
+                          </span>
+                        )}
                     </div>
                   </div>
 
-                  {/* Type */}
-                  <div className="col-span-2">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
-                      {monitor.url ? 'HTTP' : 'TCP'}
-                    </span>
-                  </div>
-
-                  {/* Status */}
-                  <div className="col-span-2">
+                  {/* Status (Desktop only) */}
+                  <div className="hidden md:block col-span-2">
                     {monitor.status === 'RUNNING' ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
@@ -187,61 +203,87 @@ const MonitorsPage = () => {
                     )}
                   </div>
 
-                  {/* Frequency */}
-                  <div className="col-span-2">
-                    <span className="text-sm text-on-surface-variant font-medium">every {monitor.frequency}s</span>
+                  {/* Type (Desktop only) */}
+                  <div className="hidden md:block col-span-2">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
+                      {monitor.url ? 'HTTP' : 'TCP'}
+                    </span>
                   </div>
 
-                  {/* Created */}
-                  <div className="col-span-1">
-                    <span className="text-xs text-on-surface-variant font-medium">{formatDateDifference(monitor.createdAt)} ago</span>
+                  {/* Frequency (Desktop only) */}
+                  <div className="hidden md:block col-span-2">
+                    <span className="text-xs text-on-surface-variant font-semibold">Every {monitor.frequency}s</span>
                   </div>
 
                   {/* Actions */}
-                  <div className="col-span-1 flex justify-end">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
-                          <EllipsisIcon className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-[160px]">
-                        <DropdownMenuGroup>
-                          <DropdownMenuItem
-                            className="rounded-xl text-sm font-medium cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              monitor.status === 'PAUSED'
-                                ? startMonitor(monitor.id)
-                                : pauseMonitor(monitor.id);
-                            }}
-                          >
-                            {monitor.status === 'PAUSED' ? (
-                              <>
-                                <PlayIcon className="h-4 w-4 mr-2 text-secondary" />
-                                <span>Start Monitor</span>
-                              </>
-                            ) : (
-                              <>
-                                <PauseIcon className="h-4 w-4 mr-2 text-tertiary" />
-                                <span>Pause Monitor</span>
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator className="bg-surface-container" />
-                          <DropdownMenuItem
-                            className="rounded-xl text-sm font-medium cursor-pointer text-error focus:text-error"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteMonitor(monitor.id);
-                            }}
-                          >
-                            <TrashIcon className="h-4 w-4 mr-2" />
-                            Delete Monitor
-                          </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="col-span-1 flex justify-end w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-none border-surface-container-high/30">
+                    {monitor.role === 'READ' ? (
+                      <div className="w-8 h-8 flex items-center justify-center text-on-surface-variant/30" title="Read-only access">
+                        <EllipsisIcon className="h-4 w-4" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 w-full md:w-auto">
+                        {/* Mobile quick actions */}
+                        <div className="flex md:hidden items-center gap-1.5 flex-1">
+                             <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    monitor.status === 'PAUSED' ? startMonitor(monitor.id) : pauseMonitor(monitor.id);
+                                }}
+                                className={`flex-1 h-8 rounded-xl flex items-center justify-center gap-2 text-[11px] font-bold transition-colors ${
+                                    monitor.status === 'PAUSED' ? 'bg-secondary/10 text-secondary' : 'bg-tertiary/10 text-tertiary'
+                                }`}
+                             >
+                                {monitor.status === 'PAUSED' ? <PlayIcon className="h-3 w-3" /> : <PauseIcon className="h-3 w-3" />}
+                                {monitor.status === 'PAUSED' ? 'Start' : 'Pause'}
+                             </button>
+                        </div>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <button className="w-8 h-8 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors md:opacity-0 group-hover:opacity-100 bg-surface-container/50 md:bg-transparent">
+                                <EllipsisIcon className="h-4 w-4" />
+                            </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="min-w-[180px] rounded-2xl border-none shadow-2xl p-1.5">
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                className="rounded-xl text-sm font-semibold cursor-pointer py-2.5 px-3 focus:bg-primary/5"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    monitor.status === 'PAUSED'
+                                    ? startMonitor(monitor.id)
+                                    : pauseMonitor(monitor.id);
+                                }}
+                                >
+                                {monitor.status === 'PAUSED' ? (
+                                    <>
+                                    <PlayIcon className="h-4 w-4 mr-2.5 text-secondary" />
+                                    <span>Start Monitor</span>
+                                    </>
+                                ) : (
+                                    <>
+                                    <PauseIcon className="h-4 w-4 mr-2.5 text-tertiary" />
+                                    <span>Pause Monitor</span>
+                                    </>
+                                )}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-surface-container-high/50 mx-1 my-1" />
+                                <DropdownMenuItem
+                                className="rounded-xl text-sm font-semibold cursor-pointer text-error focus:text-error focus:bg-error/5 py-2.5 px-3"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteMonitor(monitor.id);
+                                }}
+                                >
+                                <TrashIcon className="h-4 w-4 mr-2.5" />
+                                Delete Monitor
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

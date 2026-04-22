@@ -9,7 +9,7 @@ import RegionalAvailabilityChart from '@/components/dashboard/regional-availabil
 import RegionalResponseChart from '@/components/dashboard/regional-response-chart';
 import { useAppStore } from '@/store/useAppStore';
 import { Monitor, MonitorLog } from '@/types';
-import { Activity, ArrowLeft, BellIcon, Clock, Globe, PauseIcon, PlayIcon, Settings } from 'lucide-react';
+import { Activity, ArrowLeft, BellIcon, Clock, Globe, PauseIcon, PlayIcon, Settings, Shield } from 'lucide-react';
 
 const MonitorDetailsPage = () => {
   const { id } = useParams() as { id: string };
@@ -26,10 +26,10 @@ const MonitorDetailsPage = () => {
 
     const fetchData = async () => {
       try {
-        const monitorLogs = await fetchWithAuth('/api/monitors/' + id + '/logs');
+        const monitorLogs = await fetchWithAuth('/api/monitors/' + id + '/logs?aggregate=true&interval=15');
         if (monitorLogs.ok) {
           const result = await monitorLogs.json();
-          setMonitorLogs(result.flat());
+          setMonitorLogs(result);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -142,29 +142,39 @@ const MonitorDetailsPage = () => {
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <button
-                    onClick={() => {
-                      if (!monitor) return;
-                      isRunning
-                        ? pauseMonitor(monitor.id).then(() => setMonitor({ ...monitor, status: 'PAUSED' }))
-                        : startMonitor(monitor.id).then(() => setMonitor({ ...monitor, status: 'RUNNING' }));
-                    }}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                      isRunning
-                        ? 'bg-tertiary/10 text-tertiary hover:bg-tertiary/20'
-                        : 'bg-secondary/10 text-secondary hover:bg-secondary/20'
-                    }`}
-                  >
-                    {isRunning ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
-                    {isRunning ? 'Pause Monitor' : 'Start Monitor'}
-                  </button>
-                  <button
-                    onClick={() => monitor && handleConfigure(monitor.id)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Configure
-                  </button>
+                  {monitor?.role !== 'READ' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (!monitor) return;
+                          isRunning
+                            ? pauseMonitor(monitor.id).then(() => setMonitor({ ...monitor, status: 'PAUSED' }))
+                            : startMonitor(monitor.id).then(() => setMonitor({ ...monitor, status: 'RUNNING' }));
+                        }}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                          isRunning
+                            ? 'bg-tertiary/10 text-tertiary hover:bg-tertiary/20'
+                            : 'bg-secondary/10 text-secondary hover:bg-secondary/20'
+                        }`}
+                      >
+                        {isRunning ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
+                        {isRunning ? 'Pause Monitor' : 'Start Monitor'}
+                      </button>
+                      <button
+                        onClick={() => monitor && handleConfigure(monitor.id)}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Configure
+                      </button>
+                    </>
+                  )}
+                  {monitor?.role === 'READ' && (
+                    <div className="px-4 py-2 rounded-xl bg-surface-container text-on-surface-variant text-xs font-medium flex items-center gap-2 border border-surface-container-high/50">
+                      <Shield className="w-3.5 h-3.5" />
+                      Read-only access
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

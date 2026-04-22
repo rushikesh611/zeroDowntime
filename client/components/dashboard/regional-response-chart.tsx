@@ -63,11 +63,26 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
         return () => clearInterval(interval);
     }, []);
 
-    const regionColors: RegionColors = {
-        'us-east-1': 'hsl(var(--chart-1))',
-        'eu-west-1': 'hsl(var(--chart-2))',
-        'ap-south-1': 'hsl(var(--chart-3))'
-    };
+    const regions = useMemo(() => {
+        const uniqueRegions = new Set<string>();
+        data.forEach(log => uniqueRegions.add(log.region));
+        return Array.from(uniqueRegions);
+    }, [data]);
+
+    const regionColors = useMemo((): RegionColors => {
+        const colors = [
+            'hsl(var(--chart-1))',
+            'hsl(var(--chart-2))',
+            'hsl(var(--chart-3))',
+            'hsl(var(--chart-4))',
+            'hsl(var(--chart-5))',
+        ];
+        const mapping: RegionColors = {};
+        regions.forEach((region, i) => {
+            mapping[region] = colors[i % colors.length];
+        });
+        return mapping;
+    }, [regions]);
 
     const processedData = useMemo((): ProcessedDataPoint[] => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -86,58 +101,44 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
             new Date(a.lastCheckedAt).getTime() - new Date(b.lastCheckedAt).getTime()
         );
 
-        const timeseriesData: ProcessedDataPoint[] = [];
-        const seenTimestamps = new Set<number>();
+        // Group by timestamp
+        const dataByTimestamp: Record<number, ProcessedDataPoint> = {};
 
         sortedData.forEach(item => {
             const timestamp = new Date(item.lastCheckedAt).getTime();
 
-            if (!seenTimestamps.has(timestamp)) {
-                const dataPoint: ProcessedDataPoint = {
-                    timestamp,
-                    'us-east-1': null,
-                    'eu-west-1': null,
-                    'ap-south-1': null
-                };
-                timeseriesData.push(dataPoint);
-                seenTimestamps.add(timestamp);
+            if (!dataByTimestamp[timestamp]) {
+                dataByTimestamp[timestamp] = { timestamp } as ProcessedDataPoint;
+                regions.forEach(r => dataByTimestamp[timestamp][r] = null);
             }
 
-            const dataPoint = timeseriesData.find(d => d.timestamp === timestamp);
-            if (dataPoint && Object.hasOwn(dataPoint, item.region)) {
-                dataPoint[item.region] = item.responseTime;
-            }
+            dataByTimestamp[timestamp][item.region] = item.responseTime;
         });
 
-        if (!seenTimestamps.has(currentTime.getTime())) {
-            timeseriesData.push({
-                timestamp: currentTime.getTime(),
-                'us-east-1': null,
-                'eu-west-1': null,
-                'ap-south-1': null
-            });
+        const timeseriesData = Object.values(dataByTimestamp).sort((a, b) => a.timestamp - b.timestamp);
+
+        // Add current time point to extend chart to the right
+        if (timeseriesData.length > 0 && timeseriesData[timeseriesData.length - 1].timestamp < currentTime.getTime()) {
+            const lastPoint = { timestamp: currentTime.getTime() } as ProcessedDataPoint;
+            regions.forEach(r => lastPoint[r] = null);
+            timeseriesData.push(lastPoint);
         }
 
         return timeseriesData;
-    }, [data, selectedRange, currentTime]);
+    }, [data, selectedRange, currentTime, regions]);
 
     const avgResponseTime = useMemo(() => {
-        if (!processedData.length) return 0;
-        
+        if (!data.length) return 0;
         let totalTime = 0;
         let count = 0;
-        
-        processedData.forEach(point => {
-            Object.keys(regionColors).forEach(region => {
-                if (point[region] !== null && typeof point[region] === 'number') {
-                    totalTime += point[region] as number;
-                    count++;
-                }
-            });
+        data.forEach(log => {
+            if (log.responseTime) {
+                totalTime += log.responseTime;
+                count++;
+            }
         });
-        
         return count > 0 ? Math.round(totalTime / count) : 0;
-    }, [processedData, regionColors]);
+    }, [data]);
 
     const formatXAxis = (timestamp: number): string => {
         const date = new Date(timestamp);

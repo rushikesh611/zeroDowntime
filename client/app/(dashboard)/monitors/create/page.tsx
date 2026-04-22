@@ -25,6 +25,7 @@ import { useFieldArray, useForm } from "react-hook-form"
 import { useAppStore } from '@/store/useAppStore'
 import * as z from "zod"
 import Link from 'next/link'
+import { Sparkles } from 'lucide-react'
 
 const assertionSchema = z.object({
   id: z.string(),
@@ -76,7 +77,7 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 
 const Page = () => {
   const router = useRouter()
-  const { notifiers, fetchNotifiers } = useAppStore()
+  const { notifiers, fetchNotifiers, user } = useAppStore()
 
   useEffect(() => {
     fetchNotifiers()
@@ -148,6 +149,10 @@ const Page = () => {
     if (!watchedRegions || watchedRegions.length === 0) return false;
     return true;
   })();
+
+  const plan = user?.plan || 'FREE';
+  const maxRegions = plan === 'FREE' ? 3 : plan === 'PRO' ? 5 : 10;
+  const regionsDisabled = watchedRegions?.length >= maxRegions;
 
   return (
     <ContentLayout>
@@ -544,12 +549,19 @@ const Page = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-2xl border-none shadow-xl">
-                        <SelectItem value="300" className="rounded-xl">Every 5 minutes</SelectItem>
-                        <SelectItem value="600" className="rounded-xl">Every 10 minutes</SelectItem>
+                        {plan === 'PRO_PLUS' && <SelectItem value="30" className="rounded-xl">Every 30 seconds</SelectItem>}
+                        {(plan === 'PRO' || plan === 'PRO_PLUS') && <SelectItem value="60" className="rounded-xl">Every 1 minute</SelectItem>}
+                        <SelectItem value="300" className="rounded-xl" disabled={plan === 'FREE'}>Every 5 minutes</SelectItem>
+                        <SelectItem value="600" className="rounded-xl" disabled={plan === 'FREE'}>Every 10 minutes</SelectItem>
                         <SelectItem value="900" className="rounded-xl">Every 15 minutes</SelectItem>
                         <SelectItem value="1800" className="rounded-xl">Every 30 minutes</SelectItem>
                       </SelectContent>
                     </Select>
+                    {plan === 'FREE' && (
+                        <p className="text-xs text-primary mt-2 flex items-center gap-1 font-medium">
+                            <Sparkles className="w-3 h-3" /> Upgrade to Pro for 1-minute checks
+                        </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -558,8 +570,13 @@ const Page = () => {
 
             {/* Monitoring Regions */}
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
-              <SectionLabel>Monitoring Regions</SectionLabel>
-              <p className="text-xs text-on-surface-variant mb-4 font-medium">Select at least one region for your monitor probes.</p>
+              <div className="flex justify-between items-center mb-4">
+                <SectionLabel>Monitoring Regions</SectionLabel>
+                <span className="text-xs font-bold text-on-surface-variant bg-surface-container px-2 py-1 rounded-md">
+                    {watchedRegions?.length || 0} / {maxRegions} selected
+                </span>
+              </div>
+              <p className="text-xs text-on-surface-variant mb-4 font-medium">Select regions for your monitor probes. {plan === 'FREE' && 'Upgrade to Pro to select more regions.'}</p>
               <FormField
                 control={form.control}
                 name="regions"

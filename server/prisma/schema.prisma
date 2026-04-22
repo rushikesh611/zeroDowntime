@@ -13,39 +13,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PlanType {
+  FREE
+  PRO
+  PRO_PLUS
+}
+
+enum Role {
+  READ
+  WRITE
+}
+
 model User {
   id        String      @id @default(auto()) @map("_id") @db.ObjectId
   githubId  String?     @unique
   googleId  String?     @unique
-  username  String
-  email     String?
-  avatarUrl String?
-  Monitor   Monitor[]
-  LogSource LogSource[]
-  Notifier  Notifier[]
+  username             String
+  email                String?
+  avatarUrl            String?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  plan                 PlanType      @default(FREE)
+  Monitor              Monitor[]
+  LogSource            LogSource[]
+  Notifier             Notifier[]
+  teams                Team[]        @relation("AdminTeams")
+  teamMemberships      TeamMember[]
 }
 
 model Monitor {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
   name        String?
   url         String?
-  monitorType String      @default("http") // "http" or "tcp"
+  monitorType String        @default("http") // "http" or "tcp"
   method      String? // HTTP method (GET, POST, etc.)
   headers     Json? // Request headers
   body        String? // Request body
   assertions  Json? // Assertions for status, headers, and body
-  frequency   Int         @default(300) // in seconds
-  status      String      @default("RUNNING")
+  frequency   Int           @default(300) // in seconds
+  status      String        @default("RUNNING")
   regions     String[]
   host        String?
   port        Int?
-  user        User        @relation(fields: [userId], references: [id])
-  userId      String      @db.ObjectId
-  notifier    Notifier?   @relation(fields: [notifierId], references: [id])
-  notifierId  String?     @db.ObjectId
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String        @db.ObjectId
+  notifier    Notifier?     @relation(fields: [notifierId], references: [id])
+  notifierId  String?       @db.ObjectId
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   StatusPage  StatusPage?
+  sharedTeams MonitorTeam[]
+}
+
+model MonitorTeam {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  monitorId String  @db.ObjectId
+  monitor   Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  teamId    String  @db.ObjectId
+  team      Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([monitorId, teamId])
 }
 
 model MonitorLog {
@@ -94,4 +121,28 @@ model Notifier {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   Monitor   Monitor[]
+}
+
+model Team {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  adminId   String       @db.ObjectId
+  admin     User         @relation("AdminTeams", fields: [adminId], references: [id])
+  members   TeamMember[]
+  monitors  MonitorTeam[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  teamId    String   @db.ObjectId
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @default(READ)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, userId])
 }

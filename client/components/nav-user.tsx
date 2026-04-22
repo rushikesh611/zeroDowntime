@@ -7,7 +7,9 @@ import {
     CreditCard,
     LogOut,
     Sparkles,
+    Users,
 } from "lucide-react"
+import Link from 'next/link';
 
 import {
     Avatar,
@@ -71,26 +73,49 @@ export function NavUser() {
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold">{user.username}</span>
-                                    <span className="truncate text-xs">{user.email}</span>
+                                    <div className="flex items-center justify-between gap-2 min-w-0">
+                                        <span className="truncate text-xs text-sidebar-foreground/60">{user.email}</span>
+                                        <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">{user.plan}</span>
+                                    </div>
                                 </div>
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <Sparkles className="size-4 mr-2" />
-                                Upgrade to Pro
-                            </DropdownMenuItem>
+                            {user.plan?.toUpperCase() === 'FREE' && (
+                                <DropdownMenuItem asChild>
+                                    <Link href="/billing" className="w-full cursor-pointer text-primary font-medium">
+                                        <Sparkles className="size-4 mr-2" />
+                                        Upgrade to Pro
+                                    </Link>
+                                </DropdownMenuItem>
+                            )}
+                            {user.plan?.toUpperCase() === 'PRO' && (
+                                <DropdownMenuItem asChild>
+                                    <Link href="/billing" className="w-full cursor-pointer text-primary font-medium">
+                                        <Sparkles className="size-4 mr-2" />
+                                        Upgrade to Pro Plus
+                                    </Link>
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
+                            <DropdownMenuItem asChild>
+                                <Link href="/team" className="w-full cursor-pointer">
+                                    <Users className="size-4 mr-2" />
+                                    Team
+                                </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <BadgeCheck className="size-4 mr-2" />
                                 Account
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <CreditCard className="size-4 mr-2" />
-                                Billing
+                            <DropdownMenuItem asChild>
+                                <Link href="/billing" className="w-full cursor-pointer">
+                                    <CreditCard className="size-4 mr-2" />
+                                    Billing
+                                </Link>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
