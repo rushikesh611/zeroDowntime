@@ -63,7 +63,7 @@ export default function StatusPage() {
 
   const calculateUptimePercentage = (logs: MonitorLog[]): string => {
     if (!logs || logs.length === 0) return "N/A";
-    
+
     const upCount = logs.filter(log => log.isUp).length;
     const percentage = (upCount / logs.length) * 100;
     return percentage.toFixed(2) + "%";
@@ -71,11 +71,11 @@ export default function StatusPage() {
 
   const getMostRecentStatus = (logs: MonitorLog[]): boolean => {
     if (!logs || logs.length === 0) return true;
-    
-    const mostRecent = logs.sort((a, b) => 
+
+    const mostRecent = logs.sort((a, b) =>
       new Date(b.lastCheckedAt).getTime() - new Date(a.lastCheckedAt).getTime()
     )[0];
-    
+
     return mostRecent.isUp;
   };
 
@@ -108,14 +108,14 @@ export default function StatusPage() {
   const { statusPage, logs } = data;
   const isCurrentlyUp = getMostRecentStatus(logs);
   const uptimePercentage = calculateUptimePercentage(logs);
-  const lastCheckedAt = logs.length > 0 ? new Date(logs[logs.length-1].lastCheckedAt) : null;
+  const lastCheckedAt = logs.length > 0 ? new Date(logs[logs.length - 1].lastCheckedAt) : null;
 
   return (
     <div className="flex min-h-screen flex-col items-center p-4 bg-muted/20">
       <header className="w-full max-w-3xl flex items-center justify-center mb-10 pt-8">
         <div className="flex items-center">
           <Activity className="h-6 w-6 mr-2" />
-          <h1 className="text-2xl font-bold">ZeroDowntime</h1>
+          <h1 className="text-2xl font-bold">Beacn</h1>
         </div>
       </header>
 
@@ -155,7 +155,7 @@ export default function StatusPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="text-sm text-muted-foreground">
               Last checked: {lastCheckedAt ? formatDistance(lastCheckedAt, new Date(), { addSuffix: true }) : 'N/A'}
             </div>
@@ -193,7 +193,7 @@ export default function StatusPage() {
         </Card>
 
         <footer className="mt-12 text-center text-xs text-muted-foreground pb-8">
-          <p>Powered by ZeroDowntime • {format(new Date(), 'MMMM d, yyyy')}</p>
+          <p>Powered by Beacn • {format(new Date(), 'MMMM d, yyyy')}</p>
         </footer>
       </div>
     </div>

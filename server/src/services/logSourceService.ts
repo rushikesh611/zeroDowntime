@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
+import prisma from "../lib/prisma.js";
 
 export class LogSourceService {
     static async createLogSource(userId: string, name: string) {

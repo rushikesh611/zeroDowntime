@@ -1,10 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, User as PrismaUser } from "@prisma/client";
-
+import { User as PrismaUser } from "@prisma/client";
 import { logger } from '../utils/logger.js';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 interface JwtPayload {
   userId: string;
@@ -43,6 +41,6 @@ export default async function auth(req: Request, res: Response, next: NextFuncti
     next();
   } catch (error) {
     logger.error('Authentication error:', error);
-    return res.status(400).json({ error: 'Invalid token.' });
+    return res.status(401).json({ error: 'Invalid token.' });
   }
 }

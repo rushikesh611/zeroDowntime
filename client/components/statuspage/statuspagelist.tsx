@@ -13,7 +13,7 @@ import { formatDateDifference } from "@/lib/utils"
 const StatusPageList = () => {
   const [statusPages, setStatusPages] = useState<StatusPage[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const domain = process.env.NODE_ENV === 'production' ? 'zerodowntime.live' : 'localhost:3000';
+  const domain = process.env.NEXT_PUBLIC_CLIENT_URL ? new URL(process.env.NEXT_PUBLIC_CLIENT_URL).host : 'localhost:3000';
 
   const fetchStatusPages = async () => {
     setIsLoading(true);

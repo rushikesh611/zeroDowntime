@@ -63,11 +63,26 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
         return () => clearInterval(interval);
     }, []);
 
-    const regionColors: RegionColors = {
-        'us-east-1': 'hsl(var(--chart-1))',
-        'eu-west-1': 'hsl(var(--chart-2))',
-        'ap-south-1': 'hsl(var(--chart-3))'
-    };
+    const regions = useMemo(() => {
+        const uniqueRegions = new Set<string>();
+        data.forEach(log => uniqueRegions.add(log.region));
+        return Array.from(uniqueRegions);
+    }, [data]);
+
+    const regionColors = useMemo((): RegionColors => {
+        const colors = [
+            'hsl(var(--chart-1))',
+            'hsl(var(--chart-2))',
+            'hsl(var(--chart-3))',
+            'hsl(var(--chart-4))',
+            'hsl(var(--chart-5))',
+        ];
+        const mapping: RegionColors = {};
+        regions.forEach((region, i) => {
+            mapping[region] = colors[i % colors.length];
+        });
+        return mapping;
+    }, [regions]);
 
     const processedData = useMemo((): ProcessedDataPoint[] => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -75,7 +90,10 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
         }
 
         const hoursAgo = parseInt(selectedRange);
-        const cutoff = new Date(currentTime.getTime() - (hoursAgo * 60 * 60 * 1000));
+        const BUCKET_MS = 15 * 60 * 1000; // 15-min buckets (matches server aggregate interval)
+        const rawCutoff = currentTime.getTime() - (hoursAgo * 60 * 60 * 1000);
+        // Snap cutoff DOWN to nearest bucket boundary so edge buckets aren't trimmed
+        const cutoff = new Date(Math.floor(rawCutoff / BUCKET_MS) * BUCKET_MS);
 
         const filteredData = data.filter(item => {
             const itemDate = new Date(item.lastCheckedAt);
@@ -86,58 +104,44 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
             new Date(a.lastCheckedAt).getTime() - new Date(b.lastCheckedAt).getTime()
         );
 
-        const timeseriesData: ProcessedDataPoint[] = [];
-        const seenTimestamps = new Set<number>();
+        // Group by timestamp
+        const dataByTimestamp: Record<number, ProcessedDataPoint> = {};
 
         sortedData.forEach(item => {
             const timestamp = new Date(item.lastCheckedAt).getTime();
 
-            if (!seenTimestamps.has(timestamp)) {
-                const dataPoint: ProcessedDataPoint = {
-                    timestamp,
-                    'us-east-1': null,
-                    'eu-west-1': null,
-                    'ap-south-1': null
-                };
-                timeseriesData.push(dataPoint);
-                seenTimestamps.add(timestamp);
+            if (!dataByTimestamp[timestamp]) {
+                dataByTimestamp[timestamp] = { timestamp } as ProcessedDataPoint;
+                regions.forEach(r => dataByTimestamp[timestamp][r] = null);
             }
 
-            const dataPoint = timeseriesData.find(d => d.timestamp === timestamp);
-            if (dataPoint && Object.hasOwn(dataPoint, item.region)) {
-                dataPoint[item.region] = item.responseTime;
-            }
+            dataByTimestamp[timestamp][item.region] = item.responseTime;
         });
 
-        if (!seenTimestamps.has(currentTime.getTime())) {
-            timeseriesData.push({
-                timestamp: currentTime.getTime(),
-                'us-east-1': null,
-                'eu-west-1': null,
-                'ap-south-1': null
-            });
+        const timeseriesData = Object.values(dataByTimestamp).sort((a, b) => a.timestamp - b.timestamp);
+
+        // Add current time point to extend chart to the right
+        if (timeseriesData.length > 0 && timeseriesData[timeseriesData.length - 1].timestamp < currentTime.getTime()) {
+            const lastPoint = { timestamp: currentTime.getTime() } as ProcessedDataPoint;
+            regions.forEach(r => lastPoint[r] = null);
+            timeseriesData.push(lastPoint);
         }
 
         return timeseriesData;
-    }, [data, selectedRange, currentTime]);
+    }, [data, selectedRange, currentTime, regions]);
 
     const avgResponseTime = useMemo(() => {
-        if (!processedData.length) return 0;
-        
+        if (!data.length) return 0;
         let totalTime = 0;
         let count = 0;
-        
-        processedData.forEach(point => {
-            Object.keys(regionColors).forEach(region => {
-                if (point[region] !== null && typeof point[region] === 'number') {
-                    totalTime += point[region] as number;
-                    count++;
-                }
-            });
+        data.forEach(log => {
+            if (log.responseTime) {
+                totalTime += log.responseTime;
+                count++;
+            }
         });
-        
         return count > 0 ? Math.round(totalTime / count) : 0;
-    }, [processedData, regionColors]);
+    }, [data]);
 
     const formatXAxis = (timestamp: number): string => {
         const date = new Date(timestamp);
@@ -190,49 +194,41 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
 
     if (!Array.isArray(data) || data.length === 0) {
         return (
-            <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-                <div className="p-4 sm:p-6 pt-0">
-                    <div className="h-64 sm:h-80 flex flex-col items-center justify-center text-center">
-                        <div className="rounded-full bg-muted p-3 mb-3">
-                            <Timer className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm text-muted-foreground">No response data yet</p>
-                        <p className="text-xs text-muted-foreground mt-1">Response times will appear once monitoring begins</p>
-                    </div>
+            <div className="h-64 flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Timer className="w-5 h-5 text-primary" />
                 </div>
+                <p className="text-sm font-semibold text-on-surface">No response data yet</p>
+                <p className="text-xs text-on-surface-variant mt-1 font-medium">Response times will appear once monitoring begins</p>
             </div>
         );
     }
 
     return (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md">
-            <div className="flex flex-col space-y-1.5 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                            <Zap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                            <span className="font-semibold text-blue-600 dark:text-blue-400 tabular-nums">{avgResponseTime}ms</span>
-                            <span>average response time</span>
-                        </div>
-                    </div>
-                    <Select
-                        value={selectedRange}
-                        onValueChange={(value: TimeRange) => setSelectedRange(value)}
-                    >
-                        <SelectTrigger className="w-full sm:w-28 h-9">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.entries(timeRanges).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                    {label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+        <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2 text-sm">
+                    <Zap className="w-4 h-4 text-primary" />
+                    <span className="font-bold text-primary tabular-nums">{avgResponseTime}ms</span>
+                    <span className="text-on-surface-variant font-medium">average response time</span>
                 </div>
+                <Select
+                    value={selectedRange}
+                    onValueChange={(value: TimeRange) => setSelectedRange(value)}
+                >
+                    <SelectTrigger className="w-full sm:w-28 h-9 bg-surface-container border-none rounded-xl font-semibold">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none shadow-xl">
+                        {Object.entries(timeRanges).map(([value, label]) => (
+                            <SelectItem key={value} value={value} className="rounded-xl">
+                                {label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
-            <div className="p-4 sm:p-6 pt-0">
+            <div>
                 <div className="h-64 sm:h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart

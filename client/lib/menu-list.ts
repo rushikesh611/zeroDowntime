@@ -1,13 +1,9 @@
 import {
   Bell,
-  CreditCard,
-  Database,
   Globe,
   Logs,
   LucideIcon,
   Radio,
-  Search,
-  Settings,
   ShieldAlert,
   Users
 } from "lucide-react";
@@ -33,7 +29,9 @@ type Group = {
   menus: Menu[];
 };
 
-export function getMenuList(pathname: string): Group[] {
+export function getMenuList(pathname: string, user: any): Group[] {
+  const isFree = user?.plan === 'FREE';
+
   return [
     {
       groupLabel: "",
@@ -81,20 +79,6 @@ export function getMenuList(pathname: string): Group[] {
           label: "Logtail",
           active: pathname.includes("/logtail"),
           icon: Logs,
-          // submenus: [
-          //   {
-          //     href: "/logtail/sources",
-          //     label: "Sources",
-          //     active: pathname.includes("/logtail/sources"),
-          //     icon: Database
-          //   },
-          //   {
-          //     href: "/logtail/search",
-          //     label: "Search logs",
-          //     active: pathname.includes("/logtail/search"),
-          //     icon: Search
-          //   }
-          // ],
           disabled: true
         }
       ]
@@ -107,7 +91,7 @@ export function getMenuList(pathname: string): Group[] {
           active: pathname.includes("/notifications"),
           icon: Bell,
           submenus: [],
-          disabled: true
+          disabled: false
         }
       ]
     },
@@ -115,12 +99,12 @@ export function getMenuList(pathname: string): Group[] {
       groupLabel: "Settings",
       menus: [
         {
-          href: "/users",
-          label: "Users",
-          active: pathname.includes("/users"),
+          href: "/team",
+          label: "Teams",
+          active: pathname.includes("/team"),
           icon: Users,
           submenus: [],
-          disabled: true
+          disabled: isFree
         }
       ]
     }

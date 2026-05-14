@@ -273,7 +273,7 @@ const LogSources = () => {
             {sources.map((source) => (
               <div key={source.id} className="flex flex-col mb-3">
                 <div className="flex items-center justify-between gap-2 rounded-lg border p-3 text-left text-sm transition-all hover:bg-accent">
-                  <div className="flex items-center gap-2 flex-grow">
+                  <div className="flex items-center gap-2 grow">
                     <div className="p-1.5 rounded-md bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400">
                       <KeyRound className="h-4 w-4" />
                     </div>

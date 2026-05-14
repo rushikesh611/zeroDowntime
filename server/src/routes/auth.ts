@@ -5,7 +5,8 @@ import { User } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 
 const router = express.Router();
-
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+console.log(CLIENT_URL);
 router.get('/github', passport.authenticate('github'));
 
 router.get('/github/callback',
@@ -20,22 +21,22 @@ router.get('/github/callback',
         }
 
         const user = req.user as User;
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || '$2a$04$Ls3wM2PzVdm.08FoS3sv3uANW.EkuhFhNdSeuBNpKkXInkXumGgkm',
-            { expiresIn: '1h' }
+        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string,
+            { expiresIn: '24h' }
         );
 
         res.cookie('token', token, {
             httpOnly: true,
-            // secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 3600000,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000,
         });
         logger.info('User logged in successfully', {
             userId: user.id,
             authProvider: 'github'
         });
 
-        res.redirect('http://localhost:3000/');
+        res.redirect('/');
     }
 
 );
@@ -54,22 +55,22 @@ router.get('/google/callback',
         }
 
         const user = req.user as User;
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || '$2a$04$Ls3wM2PzVdm.08FoS3sv3uANW.EkuhFhNdSeuBNpKkXInkXumGgkm',
-            { expiresIn: '1h' }
+        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string,
+            { expiresIn: '24h' }
         );
 
         res.cookie('token', token, {
             httpOnly: true,
-            // secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 3600000,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000,
         });
         logger.info('User logged in successfully', {
             userId: user.id,
             authProvider: 'google'
         });
 
-        res.redirect('http://localhost:3000/');
+        res.redirect('/');
     }
 );
 

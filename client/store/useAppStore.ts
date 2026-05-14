@@ -1,5 +1,5 @@
 import { fetchWithAuth } from '@/lib/utils';
-import { Monitor } from '@/types';
+import { Monitor, Notifier } from '@/types';
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
@@ -9,6 +9,7 @@ type User = {
   username: string;
   email: string;
   avatarUrl: string;
+  plan: 'FREE' | 'PRO' | 'PRO_PLUS';
 }
 
 interface AppStore {
@@ -32,6 +33,14 @@ interface AppStore {
   startMonitor: (monitorId: string) => Promise<void>
   fetchMonitorById: (monitorId: string) => Promise<Monitor | undefined>
   deleteMonitor: (monitorId: string) => Promise<void>
+
+  // notifiers state
+  notifiers: Notifier[];
+  fetchNotifiers: () => Promise<void>;
+  createNotifier: (data: { name: string; type: string; details: string }) => Promise<void>;
+  updateNotifier: (id: string, data: { name?: string; type?: string; details?: string }) => Promise<void>;
+  deleteNotifier: (id: string) => Promise<void>;
+  testNotifier: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -127,7 +136,6 @@ export const useAppStore = create<AppStore>()(
               },
               body: JSON.stringify(data)
             })
-            console.log('response', response)
             if (!response.ok) {
               throw new Error('Failed to start monitor')
             }
@@ -165,6 +173,91 @@ export const useAppStore = create<AppStore>()(
             }))
           } catch (error) {
             console.error('Error deleting monitor:', error)
+          }
+        },
+        // Notifiers state
+        notifiers: [],
+        fetchNotifiers: async () => {
+          try {
+            const response = await fetchWithAuth('/api/notifiers')
+            if (!response.ok) {
+              throw new Error('Failed to fetch notifiers')
+            }
+            const data = await response.json()
+            set({ notifiers: data })
+          } catch (error) {
+            console.error('Error fetching notifiers:', error)
+          }
+        },
+        createNotifier: async (data) => {
+          try {
+            const response = await fetchWithAuth('/api/notifiers', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(data)
+            })
+            if (!response.ok) {
+              throw new Error('Failed to create notifier')
+            }
+            const newNotifier = await response.json()
+            set((state) => ({ notifiers: [newNotifier, ...state.notifiers] }))
+          } catch (error) {
+            console.error('Error creating notifier:', error)
+            throw error
+          }
+        },
+        updateNotifier: async (id, data) => {
+          try {
+            const response = await fetchWithAuth(`/api/notifiers/${id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(data)
+            })
+            if (!response.ok) {
+              throw new Error('Failed to update notifier')
+            }
+            const updated = await response.json()
+            set((state) => ({
+              notifiers: state.notifiers.map((n) => (n.id === id ? updated : n))
+            }))
+          } catch (error) {
+            console.error('Error updating notifier:', error)
+            throw error
+          }
+        },
+        deleteNotifier: async (id) => {
+          try {
+            const response = await fetchWithAuth(`/api/notifiers/${id}`, {
+              method: 'DELETE'
+            })
+            if (!response.ok) {
+              throw new Error('Failed to delete notifier')
+            }
+            set((state) => ({
+              notifiers: state.notifiers.filter((n) => n.id !== id)
+            }))
+          } catch (error) {
+            console.error('Error deleting notifier:', error)
+            throw error
+          }
+        },
+        testNotifier: async (id) => {
+          try {
+            const response = await fetchWithAuth(`/api/notifiers/${id}/test`, {
+              method: 'POST'
+            })
+            const data = await response.json()
+            if (!response.ok) {
+              return { success: false, error: data.error }
+            }
+            return { success: true }
+          } catch (error: any) {
+            console.error('Error testing notifier:', error)
+            return { success: false, error: error.message }
           }
         }
       }),

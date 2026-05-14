@@ -1,43 +1,55 @@
+import { PrismaClient } from '@prisma/client'
+import cookieParser from 'cookie-parser'
+import cors from 'cors'
 import 'dotenv/config'
 import express from 'express'
-import cors from 'cors'
-import session from 'express-session'
-import passport from './config/passport.js'
-import cookieParser from 'cookie-parser'
-import { PrismaClient } from '@prisma/client'
-import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
-
-import authRoutes from './routes/auth.js'
-import testAuthRoutes from './routes/testAuth.js'
-import monitorRoutes from './routes/monitors.js'
-import logRoutes from './routes/logSource.js'
+import session from 'express-session'
+import helmet from 'helmet'
+import passport from './config/passport.js'
 import { startUptimeCheck } from './jobs/uptimeCheck.js'
-import { logger, requestLogger } from './utils/logger.js'
-import { logVaultTransport } from './utils/logger.js'
-import statusPageRoutes from './routes/statuspage.js';
+import authRoutes from './routes/auth.js'
+import logRoutes from './routes/logSource.js'
+import monitorRoutes from './routes/monitors.js'
+import notifierRoutes from './routes/notifiers.js'
+import statusPageRoutes from './routes/statuspage.js'
+import testAuthRoutes from './routes/testAuth.js'
+import stripeRoutes from './routes/stripe.js'
+import stripeWebhookRoutes from './routes/stripeWebhook.js'
+import teamRoutes from './routes/teams.js'
+import { logger, logVaultTransport } from './utils/logger.js'
 
-
+import prisma from './lib/prisma.js'
 export const app = express()
 const PORT = process.env.PORT || 3000;
-const prisma = new PrismaClient()
 const isProd = process.env.NODE_ENV === 'production'
+const clientUrl = isProd ? process.env.CLIENT_URL : 'http://localhost:3000';
+
+app.set('trust proxy', 1); // Trust first proxy (Nginx)
+
+if (isProd && !process.env.CLIENT_URL) {
+  logger.warn('CLIENT_URL not set in production environment. CORS may be misconfigured.');
+  console.warn('CLIENT_URL not set in production environment.');
+}
+
 
 const corsOptions = {
-  origin: isProd ? 'http://zd-client-service:3000' : 'http://localhost:3000',
+  origin: clientUrl,
   credentials: true,
   optionSuccessStatus: 200
 }
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  max: 1000, // Increased from 100 to 1000 to accommodate dashboard polling
+  standardHeaders: true, 
+  legacyHeaders: false, 
 })
 
 app.disable('x-powered-by')
 
+// Webhook must be mounted BEFORE express.json() because it needs the raw body
+app.use('/api/stripe/webhook', stripeWebhookRoutes)
 
 // Middleware
 app.use(helmet())
@@ -50,7 +62,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isProd,
+    secure: process.env.COOKIE_SECURE === 'true', // Flexible for HTTP/HTTPS
     httpOnly: true,
     sameSite: 'strict'
   }
@@ -63,8 +75,11 @@ app.use(passport.session());
 app.use('/api/auth', authRoutes)
 app.use('/api', testAuthRoutes)
 app.use('/api/monitors', monitorRoutes)
+app.use('/api/notifiers', notifierRoutes)
 app.use('/api/log', logRoutes)
 app.use('/api/status-pages', statusPageRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/teams', teamRoutes);
 
 app.get('/', (req: any, res: any) => {
   res.send('Zero Downtime')

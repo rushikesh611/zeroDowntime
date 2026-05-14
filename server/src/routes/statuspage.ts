@@ -1,9 +1,8 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
 import auth from '../middleware/auth.js';
 import { logger } from '../utils/logger.js';
+import prisma from '../lib/prisma.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 // create a new status page
@@ -188,7 +187,7 @@ router.get('/public/:subdomain', async (req, res) => {
   try {
     const { subdomain } = req.params;
 
-    const statusPage = await prisma.statusPage.findUnique({
+    const statusPage = await prisma.statusPage.findFirst({
       where: {
         subdomain,
         isPublic: true
