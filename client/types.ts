@@ -30,6 +30,7 @@ export interface MonitorLog {
     responseTime: number;
     region: string;
     lastCheckedAt: string;
+    status?: "UP" | "DOWN";
 };
 
 export interface StatusPage {

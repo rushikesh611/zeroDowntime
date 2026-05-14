@@ -90,7 +90,10 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
         }
 
         const hoursAgo = parseInt(selectedRange);
-        const cutoff = new Date(currentTime.getTime() - (hoursAgo * 60 * 60 * 1000));
+        const BUCKET_MS = 15 * 60 * 1000; // 15-min buckets (matches server aggregate interval)
+        const rawCutoff = currentTime.getTime() - (hoursAgo * 60 * 60 * 1000);
+        // Snap cutoff DOWN to nearest bucket boundary so edge buckets aren't trimmed
+        const cutoff = new Date(Math.floor(rawCutoff / BUCKET_MS) * BUCKET_MS);
 
         const filteredData = data.filter(item => {
             const itemDate = new Date(item.lastCheckedAt);
@@ -112,7 +115,7 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
                 regions.forEach(r => dataByTimestamp[timestamp][r] = null);
             }
 
-            dataByTimestamp[timestamp][item.region] = item.status === 'UP' ? 1 : 0;
+            dataByTimestamp[timestamp][item.region] = (item.status === 'UP' || item.isUp) ? 1 : 0;
         });
 
         const timeseriesData = Object.values(dataByTimestamp).sort((a, b) => a.timestamp - b.timestamp);
@@ -130,7 +133,7 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
     const uptime = useMemo(() => {
         if (!data.length) return 0;
         let totalChecks = data.length;
-        let upChecks = data.filter(log => log.status === 'UP').length;
+        let upChecks = data.filter(log => log.status === 'UP' || log.isUp).length;
         return totalChecks > 0 ? ((upChecks / totalChecks) * 100).toFixed(1) : 0;
     }, [data]);
 
@@ -207,21 +210,21 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
                     <span className="font-bold text-secondary">{uptime}%</span>
                     <span className="text-on-surface-variant font-medium">uptime in selected period</span>
                 </div>
-                    <Select
-                        value={selectedRange}
-                        onValueChange={(value: TimeRange) => setSelectedRange(value)}
-                    >
-                        <SelectTrigger className="w-full sm:w-28 h-9">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.entries(timeRanges).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                    {label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <Select
+                    value={selectedRange}
+                    onValueChange={(value: TimeRange) => setSelectedRange(value)}
+                >
+                    <SelectTrigger className="w-full sm:w-28 h-9">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {Object.entries(timeRanges).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                                {label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
             <div>
                 <div className="h-64 sm:h-80 w-full">

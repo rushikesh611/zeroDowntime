@@ -136,7 +136,6 @@ export const useAppStore = create<AppStore>()(
               },
               body: JSON.stringify(data)
             })
-            console.log('response', response)
             if (!response.ok) {
               throw new Error('Failed to start monitor')
             }

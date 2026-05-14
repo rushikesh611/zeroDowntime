@@ -10,8 +10,33 @@ provider "aws" {
 }
 
 provider "aws" {
+  alias  = "us-west-1"
+  region = "us-west-1"
+}
+
+provider "aws" {
   alias  = "eu-west-1"
   region = "eu-west-1"
+}
+
+provider "aws" {
+  alias  = "eu-central-1"
+  region = "eu-central-1"
+}
+
+provider "aws" {
+  alias  = "ap-southeast-1"
+  region = "ap-southeast-1"
+}
+
+provider "aws" {
+  alias  = "ap-southeast-2"
+  region = "ap-southeast-2"
+}
+
+provider "aws" {
+  alias  = "sa-east-1"
+  region = "sa-east-1"
 }
 
 # Global IAM role 
@@ -82,6 +107,76 @@ module "monitor_lambda_eu_west_1" {
   }
 
   region           = "eu-west-1"
+  function_zip     = local.function_zip
+  source_code_hash = local.source_code_hash
+  iam_role_arn     = local.iam_role_arn
+}
+
+# Deploy to us-west-1
+module "monitor_lambda_us_west_1" {
+  source = "./modules/monitor_lambda"
+
+  providers = {
+    aws = aws.us-west-1
+  }
+
+  region           = "us-west-1"
+  function_zip     = local.function_zip
+  source_code_hash = local.source_code_hash
+  iam_role_arn     = local.iam_role_arn
+}
+
+# Deploy to eu-central-1
+module "monitor_lambda_eu_central_1" {
+  source = "./modules/monitor_lambda"
+
+  providers = {
+    aws = aws.eu-central-1
+  }
+
+  region           = "eu-central-1"
+  function_zip     = local.function_zip
+  source_code_hash = local.source_code_hash
+  iam_role_arn     = local.iam_role_arn
+}
+
+# Deploy to ap-southeast-1
+module "monitor_lambda_ap_southeast_1" {
+  source = "./modules/monitor_lambda"
+
+  providers = {
+    aws = aws.ap-southeast-1
+  }
+
+  region           = "ap-southeast-1"
+  function_zip     = local.function_zip
+  source_code_hash = local.source_code_hash
+  iam_role_arn     = local.iam_role_arn
+}
+
+# Deploy to ap-southeast-2
+module "monitor_lambda_ap_southeast_2" {
+  source = "./modules/monitor_lambda"
+
+  providers = {
+    aws = aws.ap-southeast-2
+  }
+
+  region           = "ap-southeast-2"
+  function_zip     = local.function_zip
+  source_code_hash = local.source_code_hash
+  iam_role_arn     = local.iam_role_arn
+}
+
+# Deploy to sa-east-1
+module "monitor_lambda_sa_east_1" {
+  source = "./modules/monitor_lambda"
+
+  providers = {
+    aws = aws.sa-east-1
+  }
+
+  region           = "sa-east-1"
   function_zip     = local.function_zip
   source_code_hash = local.source_code_hash
   iam_role_arn     = local.iam_role_arn

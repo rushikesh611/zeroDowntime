@@ -108,7 +108,7 @@
     --border: 200 6% 85%; /* surface-variant #dde3e7 */
     --input: 200 6% 85%;
     --ring: 260 67% 54%; /* primary */
-    --radius: 1rem;
+    --radius: 0.5rem;
     --chart-1: 260 67% 54%;
     --chart-2: 161 100% 21%;
     --chart-3: 28 100% 29%;

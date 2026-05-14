@@ -1,300 +1,317 @@
-'use client';
+"use client"
 
-import { ContentLayout } from '@/components/dashboard/content-layout';
-import { fetchWithAuth } from '@/lib/utils';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { ContentLayout } from "@/components/dashboard/content-layout"
+import { fetchWithAuth } from "@/lib/utils"
+import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
-import RegionalAvailabilityChart from '@/components/dashboard/regional-availability-chart';
-import RegionalResponseChart from '@/components/dashboard/regional-response-chart';
-import { useAppStore } from '@/store/useAppStore';
-import { Monitor, MonitorLog } from '@/types';
-import { Activity, ArrowLeft, BellIcon, Clock, Globe, PauseIcon, PlayIcon, Settings, Shield } from 'lucide-react';
+import RegionalAvailabilityChart from "@/components/dashboard/regional-availability-chart"
+import RegionalResponseChart from "@/components/dashboard/regional-response-chart"
+import { useAppStore } from "@/store/useAppStore"
+import { Monitor, MonitorLog } from "@/types"
+import { Activity, ArrowLeft, BellIcon, Clock, Globe, PauseIcon, PlayIcon, Settings, Shield, Zap } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const MonitorDetailsPage = () => {
-  const { id } = useParams() as { id: string };
-  const [monitor, setMonitor] = useState<Monitor | null>(null);
-  const [monitorLogs, setMonitorLogs] = useState<MonitorLog[]>([]);
-  const [stats, setStats] = useState<{ avg: number, p95: number, p99: number, count: number } | null>(null);
-  const { pauseMonitor, startMonitor, fetchMonitorById } = useAppStore();
-  const router = useRouter();
+    const { id } = useParams() as { id: string }
+    const [monitor, setMonitor] = useState<Monitor | null>(null)
+    const [monitorLogs, setMonitorLogs] = useState<MonitorLog[]>([])
+    const [stats, setStats] = useState<{ avg: number; p95: number; p99: number; count: number } | null>(null)
+    const { pauseMonitor, startMonitor, fetchMonitorById } = useAppStore()
+    const router = useRouter()
+    const [isMonitorLoading, setIsMonitorLoading] = useState(true)
+    const [isChartsLoading, setIsChartsLoading] = useState(true)
 
-  useEffect(() => {
-    fetchMonitorById(id).then((monitor) => {
-      if (monitor) setMonitor(monitor);
-    });
+    useEffect(() => {
+        setIsMonitorLoading(true)
+        setIsChartsLoading(true)
+        
+        fetchMonitorById(id).then((monitor) => {
+            if (monitor) setMonitor(monitor)
+        }).finally(() => setIsMonitorLoading(false))
 
-    const fetchData = async () => {
-      try {
-        const monitorLogs = await fetchWithAuth('/api/monitors/' + id + '/logs?aggregate=true&interval=15');
-        if (monitorLogs.ok) {
-          const result = await monitorLogs.json();
-          setMonitorLogs(result);
+        const fetchData = async () => {
+            try {
+                const monitorLogs = await fetchWithAuth("/api/monitors/" + id + "/logs?aggregate=true&interval=15")
+                if (monitorLogs.ok) {
+                    const result = await monitorLogs.json()
+                    setMonitorLogs(result)
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error)
+            }
         }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
 
-    const fetchStats = async () => {
-        try {
-          const response = await fetchWithAuth(`/api/monitors/${id}/stats`);
-          if (response.ok) {
-            const result = await response.json();
-            setStats(result);
-          }
-        } catch (error) {
-          console.error('Error fetching stats:', error);
+        const fetchStats = async () => {
+            try {
+                const response = await fetchWithAuth(`/api/monitors/${id}/stats`)
+                if (response.ok) {
+                    const result = await response.json()
+                    setStats(result)
+                }
+            } catch (error) {
+                console.error("Error fetching stats:", error)
+            }
         }
-      };
 
-    fetchData();
-    fetchStats();
+        Promise.all([fetchData(), fetchStats()]).finally(() => setIsChartsLoading(false))
 
-    // Set up polling for real-time updates
-    const intervalId = setInterval(() => {
-      fetchData();
-      fetchStats();
-    }, 30000); // 30 seconds
+        const intervalId = setInterval(() => {
+            fetchData()
+            fetchStats()
+        }, 30000)
 
-    return () => clearInterval(intervalId);
-  }, [id, fetchMonitorById]);
+        return () => clearInterval(intervalId)
+    }, [id, fetchMonitorById])
 
-  const handleConfigure = (monitorId: string) => router.push(`/monitors/${monitorId}/update`);
-  const handleTestAlert = (monitorId: string) => {
-    fetchWithAuth(`/api/monitors/${monitorId}/test-email`, { method: 'POST' })
-      .then(() => console.log('Test alert sent'));
-  };
+    const handleConfigure = (monitorId: string) => router.push(`/monitors/${monitorId}/update`)
 
-  const isRunning = monitor?.status === 'RUNNING';
+    const isRunning = monitor?.status === "RUNNING"
+    const avgResponseTime = stats?.avg || 0
+    const p95 = stats?.p95 || 0
+    const p99 = stats?.p99 || 0
 
-  const avgResponseTime = stats?.avg || 0;
-  const p95 = stats?.p95 || 0;
-  const p99 = stats?.p99 || 0;
-
-  return (
-    <ContentLayout>
-      <div className="space-y-5 animate-in fade-in-50 duration-500">
-
-        {/* Back nav */}
-        <button
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface font-medium transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Monitors
-        </button>
-
-        {/* Hero Card */}
-        <div className="relative overflow-hidden rounded-2xl bg-surface-container-lowest shadow-sm">
-          {/* Ambient background blobs */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-primary/5 to-transparent rounded-full -mr-16 -mt-16 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-36 h-36 bg-gradient-to-tr from-secondary/5 to-transparent rounded-full -ml-12 -mb-12 pointer-events-none" />
-
-          <div className="relative p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-              {/* Status Indicator */}
-              <div className="relative shrink-0 flex items-center justify-center w-12 h-12">
-                <div className={`w-4 h-4 rounded-full z-10 relative ${isRunning ? 'bg-secondary' : 'bg-tertiary'}`} />
-                {isRunning && (
-                  <>
-                    <div className="absolute inset-0 rounded-full bg-secondary/20 animate-ping" />
-                    <div className="absolute inset-[-8px] rounded-full bg-secondary/10 animate-ping animation-delay-300" />
-                  </>
-                )}
-                {!isRunning && (
-                  <>
-                    <div className="absolute inset-0 rounded-full bg-tertiary/20 animate-ping" />
-                    <div className="absolute inset-[-8px] rounded-full bg-tertiary/10 animate-ping animation-delay-300" />
-                  </>
-                )}
-              </div>
-
-              {/* Monitor Info */}
-              <div className="flex-1 min-w-0 space-y-2">
-                <div>
-                  <h1 className="text-lg font-semibold text-on-surface tracking-tight break-all">
-                    {monitor?.name || monitor?.url || `${monitor?.host}:${monitor?.port}`}
-                  </h1>
-                  {monitor?.name && (
-                    <p className="text-xs font-medium text-on-surface-variant break-all mt-0.5 opacity-80">
-                      {monitor?.url || `${monitor?.host}:${monitor?.port}`}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-3 mt-2">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                      isRunning
-                        ? 'bg-secondary/10 text-secondary'
-                        : 'bg-tertiary/10 text-tertiary'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-secondary' : 'bg-tertiary'}`} />
-                      {monitor?.status || '–'}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant font-medium">
-                      <Clock className="w-3.5 h-3.5" />
-                      Every {monitor?.frequency}s
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
-                      {monitor?.url ? 'HTTP' : 'TCP'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {monitor?.role !== 'READ' && (
-                    <>
-                      <button
-                        onClick={() => {
-                          if (!monitor) return;
-                          isRunning
-                            ? pauseMonitor(monitor.id).then(() => setMonitor({ ...monitor, status: 'PAUSED' }))
-                            : startMonitor(monitor.id).then(() => setMonitor({ ...monitor, status: 'RUNNING' }));
-                        }}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                          isRunning
-                            ? 'bg-tertiary/10 text-tertiary hover:bg-tertiary/20'
-                            : 'bg-secondary/10 text-secondary hover:bg-secondary/20'
-                        }`}
-                      >
-                        {isRunning ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
-                        {isRunning ? 'Pause Monitor' : 'Start Monitor'}
-                      </button>
-                      <button
-                        onClick={() => monitor && handleConfigure(monitor.id)}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Configure
-                      </button>
-                    </>
-                  )}
-                  {monitor?.role === 'READ' && (
-                    <div className="px-4 py-2 rounded-xl bg-surface-container text-on-surface-variant text-xs font-medium flex items-center gap-2 border border-surface-container-high/50">
-                      <Shield className="w-3.5 h-3.5" />
-                      Read-only access
+    return (
+        <ContentLayout>
+            <div className="mx-auto max-w-5xl py-6 space-y-8 animate-in fade-in-50 duration-500">
+                {/* Header / Back Navigation */}
+                <div className="flex items-center justify-between">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push("/monitors")}
+                        className="-ml-2 h-8 text-muted-foreground hover:text-foreground"
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Monitors
+                    </Button>
+                    <div className="flex items-center gap-2">
+                        {isMonitorLoading ? (
+                            <div className="flex gap-2">
+                                <Skeleton className="h-8 w-20" />
+                                <Skeleton className="h-8 w-24" />
+                            </div>
+                        ) : monitor && monitor.role !== "READ" && (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        if (!monitor) return
+                                        isRunning
+                                            ? pauseMonitor(monitor.id).then(() => setMonitor({ ...monitor, status: "PAUSED" }))
+                                            : startMonitor(monitor.id).then(() => setMonitor({ ...monitor, status: "RUNNING" }))
+                                    }}
+                                    className="h-8 text-xs font-semibold"
+                                >
+                                    {isRunning ? <PauseIcon className="mr-2 h-3.5 w-3.5" /> : <PlayIcon className="mr-2 h-3.5 w-3.5" />}
+                                    {isRunning ? "Pause" : "Start"}
+                                </Button>
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => monitor && handleConfigure(monitor.id)}
+                                    className="h-8 text-xs font-semibold"
+                                >
+                                    <Settings className="mr-2 h-3.5 w-3.5" />
+                                    Configure
+                                </Button>
+                            </>
+                        )}
                     </div>
-                  )}
                 </div>
-              </div>
-            </div>
 
-            {/* Info Grid */}
-            <div className="grid gap-6 md:grid-cols-2 mt-6 pt-6 border-t border-surface-container-high/50">
-              {/* Notification Channel */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest">
-                  <BellIcon className="w-3.5 h-3.5" />
-                  Notification Channel
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {monitor?.notifier ? (
-                    <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-surface-container border border-surface-container-high w-full">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-on-surface">{monitor.notifier.name}</span>
-                        <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-black">
-                          {monitor.notifier.type}
-                        </span>
-                      </div>
-                      <span className="text-xs text-on-surface-variant font-medium truncate">
-                        {monitor.notifier.details}
-                      </span>
+                {/* Hero Section */}
+                <div className="grid gap-6 md:grid-cols-3">
+                    <div className="md:col-span-2 space-y-4">
+                        {isMonitorLoading ? (
+                            <div className="flex items-start gap-4">
+                                <Skeleton className="h-12 w-12 rounded-lg shrink-0" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-7 w-48" />
+                                    <Skeleton className="h-4 w-64" />
+                                    <div className="flex gap-2 mt-3">
+                                        <Skeleton className="h-5 w-16" />
+                                        <Skeleton className="h-5 w-12" />
+                                        <Skeleton className="h-5 w-24" />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-start gap-4">
+                                <div className={`h-12 w-12 rounded-lg flex items-center justify-center shrink-0 ${isRunning ? 'bg-green-500/10 text-green-600' : 'bg-yellow-500/10 text-yellow-600'}`}>
+                                    <Activity className="h-6 w-6" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h1 className="text-2xl font-semibold tracking-tight truncate">
+                                        {monitor?.name || monitor?.url || `${monitor?.host}:${monitor?.port}`}
+                                    </h1>
+                                    <p className="text-sm text-muted-foreground truncate font-mono mt-0.5">
+                                        {monitor?.url || `${monitor?.host}:${monitor?.port}`}
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-3">
+                                        <Badge variant={isRunning ? "secondary" : "outline"} className={`text-[10px] uppercase font-bold tracking-wider rounded-md h-5 ${isRunning ? 'bg-green-500/10 text-green-700 border-green-500/20' : ''}`}>
+                                            <div className={`mr-1.5 h-1.5 w-1.5 rounded-full ${isRunning ? 'bg-green-600 animate-pulse' : 'bg-muted-foreground'}`} />
+                                            {monitor?.status || 'UNKNOWN'}
+                                        </Badge>
+                                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider rounded-md h-5">
+                                            {monitor?.url ? 'HTTP' : 'TCP'}
+                                        </Badge>
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                                            <Clock className="h-3.5 w-3.5" />
+                                            Every {monitor?.frequency}s
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                  ) : (
-                    <span className="text-sm text-on-surface-variant font-medium">No channel configured</span>
-                  )}
+
+                    <Card className="shadow-none border h-full flex flex-col justify-center p-4">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                <BellIcon className="h-3.5 w-3.5" />
+                                Alert Channel
+                            </div>
+                            {isMonitorLoading ? (
+                                <div className="space-y-1.5">
+                                    <Skeleton className="h-4 w-32" />
+                                    <Skeleton className="h-3 w-48" />
+                                </div>
+                            ) : monitor?.notifier ? (
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-semibold">{monitor.notifier.name}</span>
+                                        <Badge variant="outline" className="text-[8px] uppercase h-4 px-1">{monitor.notifier.type}</Badge>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate">{monitor.notifier.details}</p>
+                                </div>
+                            ) : (
+                                <p className="text-xs text-muted-foreground italic">No channel configured</p>
+                            )}
+                        </div>
+                    </Card>
                 </div>
-              </div>
 
-              {/* Monitoring Regions */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest">
-                  <Globe className="w-3.5 h-3.5" />
-                  Monitoring Regions
+                {/* Stats Grid */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                    {isChartsLoading ? (
+                        <>
+                            {[1, 2, 3].map(i => (
+                                <Card key={i} className="shadow-none border">
+                                    <CardContent className="p-5 space-y-2">
+                                        <Skeleton className="h-3 w-20" />
+                                        <Skeleton className="h-8 w-24" />
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </>
+                    ) : (
+                        <>
+                            <Card className="shadow-none border bg-muted/20">
+                                <CardContent className="p-5">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Avg Latency</p>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-semibold tracking-tight">{avgResponseTime}</span>
+                                        <span className="text-xs text-muted-foreground font-medium">ms</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border">
+                                <CardContent className="p-5">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">p95 Latency</p>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-semibold tracking-tight text-blue-600">{p95}</span>
+                                        <span className="text-xs text-muted-foreground font-medium">ms</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border">
+                                <CardContent className="p-5">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">p99 Latency</p>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-semibold tracking-tight text-purple-600">{p99}</span>
+                                        <span className="text-xs text-muted-foreground font-medium">ms</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </>
+                    )}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {monitor?.regions?.length ? monitor.regions.map((region) => (
-                    <span key={region} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold">
-                      {region}
-                    </span>
-                  )) : (
-                    <span className="text-sm text-on-surface-variant font-medium">No regions configured</span>
-                  )}
+
+                {/* Charts Area */}
+                <div className="grid gap-6">
+                    <Card className="shadow-none border">
+                        <CardHeader className="pb-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                        <Zap className="h-4 w-4 text-yellow-500" />
+                                        Regional Availability
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">Uptime status across your configured regions.</CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {monitor?.regions?.map(r => (
+                                        <Badge key={r} variant="outline" className="text-[9px] uppercase font-bold py-0 h-4">{r}</Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {isChartsLoading ? (
+                                <div className="space-y-2">
+                                    <Skeleton className="h-64 w-full rounded-md" />
+                                </div>
+                            ) : (
+                                <RegionalAvailabilityChart data={monitorLogs} />
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-none border">
+                        <CardHeader className="pb-4">
+                            <div className="space-y-1">
+                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                    <Globe className="h-4 w-4 text-blue-500" />
+                                    Regional Response Times
+                                </CardTitle>
+                                <CardDescription className="text-xs">Average latency measured from different probe locations.</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {isChartsLoading ? (
+                                <div className="space-y-2">
+                                    <Skeleton className="h-64 w-full rounded-md" />
+                                </div>
+                            ) : (
+                                <RegionalResponseChart data={monitorLogs} />
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Performance Summary */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-[11px] font-black text-on-surface-variant uppercase tracking-[0.2em]">Performance Summary</h2>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-primary/70 text-[10px] font-bold border border-primary/10">
-              <Clock className="w-3 h-3" />
-              Last 24 Hours
+                {/* Footer Info */}
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-medium px-1">
+                    <div className="flex items-center gap-4">
+                        <span>Monitor ID: {id}</span>
+                        <Separator orientation="vertical" className="h-3" />
+                        <span>Created: {monitor?.createdAt ? new Date(monitor.createdAt).toLocaleDateString() : '–'}</span>
+                    </div>
+                    {monitor?.role === 'READ' && (
+                        <div className="flex items-center gap-1.5 text-yellow-600">
+                            <Shield className="h-3 w-3" />
+                            Read-only View
+                        </div>
+                    )}
+                </div>
             </div>
-          </div>
+        </ContentLayout>
+    )
+}
 
-          <div className="grid gap-4 sm:grid-cols-3">
-          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-surface-container-high/40 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform">
-              <Activity className="w-8 h-8 text-on-surface" />
-            </div>
-            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-2">Avg Latency</p>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-bold text-on-surface tracking-tight">{avgResponseTime}</span>
-              <span className="text-sm font-bold text-on-surface-variant/70">ms</span>
-            </div>
-          </div>
-          
-          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-surface-container-high/40 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform text-secondary">
-                  <Activity className="w-8 h-8" />
-              </div>
-            <p className="text-[10px] font-black text-secondary/80 uppercase tracking-[0.2em] mb-2">p95 Latency</p>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-bold text-secondary tracking-tight">{p95}</span>
-              <span className="text-sm font-bold text-on-surface-variant/70">ms</span>
-            </div>
-          </div>
-
-          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-surface-container-high/40 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform text-primary">
-                  <Activity className="w-8 h-8" />
-              </div>
-            <p className="text-[10px] font-black text-primary/80 uppercase tracking-[0.2em] mb-2">p99 Latency</p>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-bold text-primary tracking-tight">{p99}</span>
-              <span className="text-sm font-bold text-on-surface-variant/70">ms</span>
-            </div>
-          </div>
-          </div>
-        </div>
-
-        {/* Charts */}
-        <div className="space-y-3">
-          {/* Availability Chart */}
-          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm">
-            <div className="mb-4">
-              <h2 className="text-base font-semibold text-on-surface tracking-tight">Regional Availability</h2>
-              <p className="text-sm text-on-surface-variant mt-0.5">Monitor uptime across different regions</p>
-            </div>
-            <RegionalAvailabilityChart data={monitorLogs} />
-          </div>
-
-          {/* Response Time Chart */}
-          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm">
-            <div className="mb-4">
-              <h2 className="text-base font-semibold text-on-surface tracking-tight">Regional Response Times</h2>
-              <p className="text-sm text-on-surface-variant mt-0.5">Average response times by region</p>
-            </div>
-            <RegionalResponseChart data={monitorLogs} />
-          </div>
-        </div>
-      </div>
-    </ContentLayout>
-  );
-};
-
-export default MonitorDetailsPage;
+export default MonitorDetailsPage

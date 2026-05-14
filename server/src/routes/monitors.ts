@@ -90,13 +90,13 @@ router.post('/', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
     try {
         const userId = req.user!.id;
-        
+
         // Find teams user is a member of and their roles in those teams
         const memberships = await prisma.teamMember.findMany({
             where: { userId },
             include: { team: { include: { admin: true } } }
         });
-        
+
         const teamRoles = memberships.reduce((acc, m) => {
             acc[m.teamId] = { role: m.role, adminName: m.team.admin?.username || 'Unknown' };
             return acc;
@@ -109,7 +109,7 @@ router.get('/', auth, async (req, res) => {
             where: { teamId: { in: teamIds } },
             select: { monitorId: true }
         });
-        
+
         const monitorIds = sharedMonitorIds.map(sm => sm.monitorId);
 
         const monitors = await prisma.monitor.findMany({
@@ -119,7 +119,7 @@ router.get('/', auth, async (req, res) => {
                     { id: { in: monitorIds } }
                 ]
             },
-            include: { 
+            include: {
                 notifier: true,
                 sharedTeams: true,
                 user: { select: { username: true } }
@@ -130,10 +130,10 @@ router.get('/', auth, async (req, res) => {
             if (monitor.userId === userId) {
                 return { ...monitor, role: 'OWNER' };
             }
-            
+
             // Find which shared team gives the user the highest permission
             const relevantSharedTeams = monitor.sharedTeams.filter(st => teamIds.includes(st.teamId));
-            
+
             let bestRole: 'READ' | 'WRITE' = 'READ';
             let ownerName = '';
 
@@ -145,10 +145,10 @@ router.get('/', auth, async (req, res) => {
                 }
             });
 
-            return { 
-                ...monitor, 
-                role: bestRole, 
-                ownerName 
+            return {
+                ...monitor,
+                role: bestRole,
+                ownerName
             };
         });
 
@@ -352,7 +352,7 @@ router.post('/:id/check', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.user!.id;
-        
+
         const monitor = await prisma.monitor.findUnique({
             where: { id }
         });
@@ -407,7 +407,7 @@ router.get('/:id/logs', auth, async (req, res) => {
         const { aggregate, interval = '15' } = req.query;
         const userId = req.user!.id;
         const twentyFourHoursAgo = new Date(Date.now() - 86400000);
-        
+
         const monitor = await prisma.monitor.findUnique({ where: { id } });
         if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
 
@@ -424,7 +424,7 @@ router.get('/:id/logs', auth, async (req, res) => {
         }
 
         const logs = await prisma.monitorLog.findMany({
-            where: { 
+            where: {
                 monitorId: id,
                 lastCheckedAt: { gte: twentyFourHoursAgo }
             },
@@ -452,7 +452,7 @@ router.get('/:id/logs', auth, async (req, res) => {
 
                 buckets[key].responseTime += log.responseTime || 0;
                 buckets[key].count += 1;
-                if (log.status === 'DOWN') {
+                if (!log.isUp) {
                     buckets[key].status = 'DOWN';
                 }
             });
@@ -598,8 +598,8 @@ router.get('/:id/stats', auth, async (req, res) => {
 
         // Fetch only responseTime to minimize payload from DB
         const logs = await prisma.monitorLog.findMany({
-            where: { 
-                monitorId: id, 
+            where: {
+                monitorId: id,
                 lastCheckedAt: { gte: twentyFourHoursAgo },
                 responseTime: { gt: 0 } // Only consider valid responses
             },

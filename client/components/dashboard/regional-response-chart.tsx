@@ -90,7 +90,10 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
         }
 
         const hoursAgo = parseInt(selectedRange);
-        const cutoff = new Date(currentTime.getTime() - (hoursAgo * 60 * 60 * 1000));
+        const BUCKET_MS = 15 * 60 * 1000; // 15-min buckets (matches server aggregate interval)
+        const rawCutoff = currentTime.getTime() - (hoursAgo * 60 * 60 * 1000);
+        // Snap cutoff DOWN to nearest bucket boundary so edge buckets aren't trimmed
+        const cutoff = new Date(Math.floor(rawCutoff / BUCKET_MS) * BUCKET_MS);
 
         const filteredData = data.filter(item => {
             const itemDate = new Date(item.lastCheckedAt);
