@@ -50,11 +50,11 @@ export function getMenuList(pathname: string, user: any): Group[] {
       menus: [
         {
           href: "/statuspage",
-          label: "Status pages",
-          active: pathname.includes("/statuspage"),
+          label: "Status Pages",
+          active: pathname.startsWith("/statuspage") || pathname.startsWith("/s/"),
           icon: Radio,
           submenus: [],
-          disabled: true
+          disabled: false
         }
       ]
     },
@@ -64,10 +64,10 @@ export function getMenuList(pathname: string, user: any): Group[] {
         {
           href: "/incidents",
           label: "Incidents",
-          active: pathname.includes("/incidents"),
+          active: pathname.startsWith("/incidents"),
           icon: ShieldAlert,
           submenus: [],
-          disabled: true
+          disabled: false
         }
       ]
     },

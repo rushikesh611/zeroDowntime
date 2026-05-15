@@ -29,7 +29,7 @@ const nextConfig = {
                         value: '(?<subdomain>[a-z0-9-]+)\\.localhost:3000',
                     },
                 ],
-                destination: '/status/:subdomain/:path*',
+                destination: '/s/:subdomain/:path*',
             },
             {
                 source: '/statuspreview/:subdomain',

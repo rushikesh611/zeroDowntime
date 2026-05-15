@@ -13,7 +13,7 @@ router.post('/', auth, async (req, res) => {
         const monitorData: MonitorInput = req.body;
         logger.info('Create monitor payload:', monitorData);
 
-        const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+        const user = await prisma.user.findUnique({ where: { id: (req as any).user.id } });
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const monitorCount = await prisma.monitor.count({ where: { userId: user.id } });
@@ -51,7 +51,7 @@ router.post('/', auth, async (req, res) => {
             monitorType: monitorData.monitorType,
             notifierId: monitorData.notifierId,
             frequency: monitorData.frequency,
-            userId: req.user!.id,
+            userId: (req as any).user.id,
             regions: monitorData.regions
         };
 
@@ -89,7 +89,7 @@ router.post('/', auth, async (req, res) => {
 // Get all monitors (owned + shared via team)
 router.get('/', auth, async (req, res) => {
     try {
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
 
         // Find teams user is a member of and their roles in those teams
         const memberships = await prisma.teamMember.findMany({
@@ -164,7 +164,7 @@ router.get('/', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
 
         const monitor = await prisma.monitor.findUnique({
             where: { id },
@@ -225,7 +225,7 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
         const { name, url, monitorType, method, headers, body, notifierId, frequency, status, regions, assertions } = req.body;
 
         const existingMonitor = await prisma.monitor.findUnique({ where: { id } });
@@ -309,7 +309,7 @@ router.put('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
 
         const existingMonitor = await prisma.monitor.findUnique({ where: { id } });
         if (!existingMonitor) return res.status(404).json({ error: 'Monitor not found' });
@@ -351,7 +351,7 @@ router.delete('/:id', auth, async (req, res) => {
 router.post('/:id/check', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
 
         const monitor = await prisma.monitor.findUnique({
             where: { id }
@@ -405,7 +405,7 @@ router.get('/:id/logs', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const { aggregate, interval = '15' } = req.query;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
         const twentyFourHoursAgo = new Date(Date.now() - 86400000);
 
         const monitor = await prisma.monitor.findUnique({ where: { id } });
@@ -477,7 +477,7 @@ router.get('/:id/logs', auth, async (req, res) => {
 router.get('/:id/logs/:region', auth, async (req, res) => {
     try {
         const { id, region } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
 
         const monitor = await prisma.monitor.findUnique({ where: { id } });
         if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
@@ -509,7 +509,7 @@ router.get('/:id/logs/:region', auth, async (req, res) => {
 router.get('/:id/logs/hour', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
 
         const monitor = await prisma.monitor.findUnique({ where: { id } });
         if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
@@ -542,7 +542,7 @@ router.get('/:id/logs/hour', auth, async (req, res) => {
 router.get('/:id/logs/day', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
         const twentyFourHoursAgo = new Date(Date.now() - 86400000).toISOString();
 
         const monitor = await prisma.monitor.findUnique({ where: { id } });
@@ -578,7 +578,7 @@ router.get('/:id/logs/day', auth, async (req, res) => {
 router.get('/:id/stats', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
         const twentyFourHoursAgo = new Date(Date.now() - 86400000);
 
         const monitor = await prisma.monitor.findUnique({ where: { id } });
@@ -636,7 +636,7 @@ router.get('/:id/stats', auth, async (req, res) => {
 router.post('/:id/test-email', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const userId = (req as any).user.id;
 
         const monitor = await prisma.monitor.findUnique({
             where: { id },

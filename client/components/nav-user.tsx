@@ -1,21 +1,18 @@
 "use client"
 
 import {
-    BadgeCheck,
-    Bell,
     ChevronsUpDown,
     CreditCard,
     LogOut,
-    Sparkles,
-    Users,
-} from "lucide-react"
+    Sparkles
+} from "lucide-react";
 import Link from 'next/link';
 
 import {
     Avatar,
     AvatarFallback,
     AvatarImage,
-} from "@/components/ui/avatar"
+} from "@/components/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,14 +21,14 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
     useSidebar,
-} from "@/components/ui/sidebar"
-import { useAppStore } from "@/store/useAppStore"
+} from "@/components/ui/sidebar";
+import { useAppStore } from "@/store/useAppStore";
 
 export function NavUser() {
     const { isMobile } = useSidebar()
@@ -105,16 +102,6 @@ export function NavUser() {
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator className="bg-border/50" />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem asChild className="cursor-pointer">
-                                <Link href="/team" className="w-full flex items-center">
-                                    <Users className="size-4 mr-2 text-muted-foreground" />
-                                    Team
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">
-                                <BadgeCheck className="size-4 mr-2 text-muted-foreground" />
-                                Account
-                            </DropdownMenuItem>
                             <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link href="/billing" className="w-full flex items-center">
                                     <CreditCard className="size-4 mr-2 text-muted-foreground" />

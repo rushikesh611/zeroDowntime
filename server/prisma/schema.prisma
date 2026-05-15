@@ -35,6 +35,7 @@ model User {
   stripeSubscriptionId String?
   plan                 PlanType      @default(FREE)
   Monitor              Monitor[]
+  StatusPage           StatusPage[]
   LogSource            LogSource[]
   Notifier             Notifier[]
   teams                Team[]        @relation("AdminTeams")
@@ -61,7 +62,8 @@ model Monitor {
   notifierId  String?       @db.ObjectId
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  StatusPage  StatusPage?
+  statusPageIds String[]     @db.ObjectId
+  statusPages   StatusPage[] @relation(fields: [statusPageIds], references: [id])
   sharedTeams MonitorTeam[]
 }
 
@@ -101,16 +103,59 @@ model LogSource {
 }
 
 model StatusPage {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  monitorId   String   @unique @db.ObjectId
-  monitor     Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
-  subdomain   String   @unique
-  title       String
-  description String?
-  isPublic    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String     @db.ObjectId
+  user         User       @relation(fields: [userId], references: [id])
+  monitorIds   String[]   @db.ObjectId
+  monitors     Monitor[]  @relation(fields: [monitorIds], references: [id])
+  subdomain    String     @unique
+  customDomain String?    @unique
+  title        String
+  description  String?
+  isPublic     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  incidents    Incident[]
 }
+
+enum IncidentSeverity {
+  SEV3
+  SEV2
+  SEV2_CRITICAL
+  SEV1
+}
+
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+model Incident {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  statusPageId String           @db.ObjectId
+  statusPage   StatusPage       @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+  title        String
+  severity     IncidentSeverity @default(SEV3)
+  status       IncidentStatus   @default(INVESTIGATING)
+  postMortem   String?          // Markdown RCA/post-mortem content
+  startedAt    DateTime         @default(now())
+  resolvedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  updates      IncidentUpdate[]
+}
+
+model IncidentUpdate {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  incidentId String         @db.ObjectId
+  incident   Incident       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  message    String
+  status     IncidentStatus
+  createdAt  DateTime       @default(now())
+}
+
 model Notifier {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @db.ObjectId

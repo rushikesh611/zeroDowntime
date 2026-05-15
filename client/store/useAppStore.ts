@@ -98,7 +98,7 @@ export const useAppStore = create<AppStore>()(
             if (!response.ok) {
               throw new Error('Failed to fetch monitors')
             }
-            const data = await response.json()
+            const data = response.status === 204 ? [] : await response.json()
             set({ monitors: data })
           } catch (error) {
             console.error('Error fetching monitors:', error)
@@ -154,6 +154,7 @@ export const useAppStore = create<AppStore>()(
             if (!response.ok) {
               throw new Error('Failed to fetch monitor')
             }
+            if (response.status === 204) return undefined
             const data = await response.json()
             return data
           } catch (error) {
@@ -183,7 +184,7 @@ export const useAppStore = create<AppStore>()(
             if (!response.ok) {
               throw new Error('Failed to fetch notifiers')
             }
-            const data = await response.json()
+            const data = response.status === 204 ? [] : await response.json()
             set({ notifiers: data })
           } catch (error) {
             console.error('Error fetching notifiers:', error)

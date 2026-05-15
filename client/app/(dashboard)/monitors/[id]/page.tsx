@@ -38,8 +38,12 @@ const MonitorDetailsPage = () => {
             try {
                 const monitorLogs = await fetchWithAuth("/api/monitors/" + id + "/logs?aggregate=true&interval=15")
                 if (monitorLogs.ok) {
-                    const result = await monitorLogs.json()
-                    setMonitorLogs(result)
+                    if (monitorLogs.status === 204) {
+                        setMonitorLogs([])
+                    } else {
+                        const result = await monitorLogs.json()
+                        setMonitorLogs(result)
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching data:", error)
