@@ -43,8 +43,14 @@ The interface should feel like a modern, professional productivity tool (inspire
 - Secondary information should be `text-muted-foreground` and slightly smaller.
 - Maintain a clean, sans-serif font stack.
 
+### Modals & Dialogs
+- **Consistency**: All destructive actions (Delete, Remove, Reset) must use the `AlertDialog` component from `shadcn/ui`.
+- **UI Integrity**: Never use native browser `confirm()` or `alert()` dialogs as they break the professional aesthetic.
+- **Safety**: Confirmation modals for destructive actions must explicitly state that the action "cannot be undone" and use clear, semantic button colors (e.g., Rose/Red for deletion).
+
 ## Prohibited Elements (Anti-Patterns)
 - ❌ Heavy radial or linear gradients (`bg-gradient-to-r`, `radial-gradient`) used as ambient backgrounds.
 - ❌ Oversized drop shadows (`shadow-lg`, `shadow-xl`) on structural cards.
 - ❌ Complex, non-standard border shapes or mismatched radii.
 - ❌ "Gimmicky" pulse animations unless strictly necessary to indicate an active, time-sensitive state (e.g., a tiny status dot).
+- ❌ Native browser dialogs (`confirm()`, `alert()`) for user interaction.

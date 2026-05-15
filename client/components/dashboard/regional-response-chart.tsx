@@ -90,44 +90,49 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
         }
 
         const hoursAgo = parseInt(selectedRange);
-        const BUCKET_MS = 15 * 60 * 1000; // 15-min buckets (matches server aggregate interval)
-        const rawCutoff = currentTime.getTime() - (hoursAgo * 60 * 60 * 1000);
-        // Snap cutoff DOWN to nearest bucket boundary so edge buckets aren't trimmed
-        const cutoff = new Date(Math.floor(rawCutoff / BUCKET_MS) * BUCKET_MS);
+        const cutoff = currentTime.getTime() - (hoursAgo * 60 * 60 * 1000);
 
         const filteredData = data.filter(item => {
-            const itemDate = new Date(item.lastCheckedAt);
-            return itemDate >= cutoff && itemDate <= currentTime;
+            const itemDate = new Date(item.lastCheckedAt).getTime();
+            return itemDate >= cutoff && itemDate <= currentTime.getTime();
         });
 
         const sortedData = filteredData.sort((a, b) =>
             new Date(a.lastCheckedAt).getTime() - new Date(b.lastCheckedAt).getTime()
         );
 
-        // Group by timestamp
-        const dataByTimestamp: Record<number, ProcessedDataPoint> = {};
-
+        // Map regions to points
+        const GAP_THRESHOLD = 15 * 60 * 1000; // 15 minutes gap
+        const result: ProcessedDataPoint[] = [];
+        
+        // Group by timestamp (roughly) to merge regional checks that happened at the same time
+        const groupedByTime: Record<number, any> = {};
+        
         sortedData.forEach(item => {
-            const timestamp = new Date(item.lastCheckedAt).getTime();
-
-            if (!dataByTimestamp[timestamp]) {
-                dataByTimestamp[timestamp] = { timestamp } as ProcessedDataPoint;
-                regions.forEach(r => dataByTimestamp[timestamp][r] = null);
+            // Use 5-second resolution to avoid losing data while still grouping near-simultaneous checks
+            const ts = Math.floor(new Date(item.lastCheckedAt).getTime() / 5000) * 5000;
+            if (!groupedByTime[ts]) {
+                groupedByTime[ts] = { timestamp: ts };
             }
-
-            dataByTimestamp[timestamp][item.region] = item.responseTime;
+            groupedByTime[ts][item.region] = item.responseTime;
         });
 
-        const timeseriesData = Object.values(dataByTimestamp).sort((a, b) => a.timestamp - b.timestamp);
-
-        // Add current time point to extend chart to the right
-        if (timeseriesData.length > 0 && timeseriesData[timeseriesData.length - 1].timestamp < currentTime.getTime()) {
-            const lastPoint = { timestamp: currentTime.getTime() } as ProcessedDataPoint;
-            regions.forEach(r => lastPoint[r] = null);
-            timeseriesData.push(lastPoint);
+        const timestamps = Object.keys(groupedByTime).map(Number).sort((a, b) => a - b);
+        
+        for (let i = 0; i < timestamps.length; i++) {
+            const currentTs = timestamps[i];
+            
+            // Insert nulls to show gaps if the jump is too big
+            if (i > 0 && currentTs - timestamps[i-1] > GAP_THRESHOLD) {
+                const gapPoint = { timestamp: timestamps[i-1] + 60000 } as ProcessedDataPoint;
+                regions.forEach(r => gapPoint[r] = null);
+                result.push(gapPoint);
+            }
+            
+            result.push(groupedByTime[currentTs]);
         }
 
-        return timeseriesData;
+        return result;
     }, [data, selectedRange, currentTime, regions]);
 
     const avgResponseTime = useMemo(() => {
@@ -247,9 +252,9 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
                                 scale="time"
                                 domain={xAxisDomain}
                                 tickFormatter={formatXAxis}
-                                interval="preserveStartEnd"
+                                tickCount={6}
                                 stroke="hsl(var(--muted-foreground))"
-                                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
                                 tickLine={false}
                                 axisLine={{ stroke: "hsl(var(--border))" }}
                             />
@@ -287,13 +292,13 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
                                     dataKey={region}
                                     name={region}
                                     stroke={regionColors[region]}
-                                    dot={false}
+                                    dot={{ r: 3, strokeWidth: 1.5, fill: regionColors[region] }}
                                     activeDot={{ 
                                         r: 5, 
                                         strokeWidth: 2,
                                         className: "animate-pulse"
                                     }}
-                                    connectNulls={true}
+                                    connectNulls={false}
                                     strokeWidth={2.5}
                                     className="transition-all duration-300"
                                 />

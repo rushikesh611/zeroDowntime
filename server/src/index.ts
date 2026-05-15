@@ -17,6 +17,7 @@ import testAuthRoutes from './routes/testAuth.js'
 import stripeRoutes from './routes/stripe.js'
 import stripeWebhookRoutes from './routes/stripeWebhook.js'
 import teamRoutes from './routes/teams.js'
+import incidentRoutes from './routes/incidents.js'
 import { logger, logVaultTransport } from './utils/logger.js'
 
 import prisma from './lib/prisma.js'
@@ -47,6 +48,24 @@ const limiter = rateLimit({
 })
 
 app.disable('x-powered-by')
+app.disable('etag')
+
+// Middleware to handle 204 No Content for empty results
+app.use((req, res, next) => {
+  const originalJson = res.json;
+  res.json = function (data: any) {
+    // If the data is an empty array, null, or undefined, return 204
+    if (
+      data === null || 
+      data === undefined || 
+      (Array.isArray(data) && data.length === 0)
+    ) {
+      return res.status(204).end();
+    }
+    return originalJson.call(this, data);
+  };
+  next();
+});
 
 // Webhook must be mounted BEFORE express.json() because it needs the raw body
 app.use('/api/stripe/webhook', stripeWebhookRoutes)
@@ -80,6 +99,7 @@ app.use('/api/log', logRoutes)
 app.use('/api/status-pages', statusPageRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/incidents', incidentRoutes);
 
 app.get('/', (req: any, res: any) => {
   res.send('Zero Downtime')

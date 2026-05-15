@@ -8,7 +8,7 @@ const router = express.Router();
 // Get all notifiers
 router.get('/', auth, async (req, res) => {
     try {
-        const notifiers = await notifierService.getNotifiers(req.user!.id);
+        const notifiers = await notifierService.getNotifiers((req as any).user.id);
         res.json(notifiers);
     } catch (error) {
         logger.error('Error getting notifiers:', error);
@@ -23,7 +23,7 @@ router.post('/', auth, async (req, res) => {
         if (!name || !type || !details) {
             return res.status(400).json({ error: 'Name, type, and details are required' });
         }
-        const notifier = await notifierService.createNotifier(req.user!.id, { name, type, details });
+        const notifier = await notifierService.createNotifier((req as any).user.id, { name, type, details });
         res.status(201).json(notifier);
     } catch (error) {
         logger.error('Error creating notifier:', error);
@@ -36,7 +36,7 @@ router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, type, details } = req.body;
-        const notifier = await notifierService.updateNotifier(req.user!.id, id, { name, type, details });
+        const notifier = await notifierService.updateNotifier((req as any).user.id, id, { name, type, details });
         res.json(notifier);
     } catch (error) {
         logger.error('Error updating notifier:', error);
@@ -48,7 +48,7 @@ router.put('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        await notifierService.deleteNotifier(req.user!.id, id);
+        await notifierService.deleteNotifier((req as any).user.id, id);
         res.json({ message: 'Notifier deleted successfully' });
     } catch (error) {
         logger.error('Error deleting notifier:', error);
@@ -60,7 +60,7 @@ router.delete('/:id', auth, async (req, res) => {
 router.post('/:id/test', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await notifierService.sendTestNotification(req.user!.id, id);
+        const result = await notifierService.sendTestNotification((req as any).user.id, id);
         res.json(result);
     } catch (error: any) {
         logger.error('Error testing notifier:', error);

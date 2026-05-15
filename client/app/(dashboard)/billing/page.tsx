@@ -134,6 +134,7 @@ export default function BillingPage() {
                             <div className="pt-4 space-y-3">
                                 {[
                                     '1 Monitor limit',
+                                    '1 Status Page',
                                     '15-minute frequency',
                                     'Max 3 regions',
                                     'Email notifications'
@@ -176,6 +177,7 @@ export default function BillingPage() {
                             <div className="pt-4 space-y-3">
                                 {[
                                     '15 Monitors limit',
+                                    '10 Status Pages',
                                     '1-minute frequency',
                                     'Max 5 regions',
                                     '1 Team (invite up to 20 users)',
@@ -219,6 +221,7 @@ export default function BillingPage() {
                             <div className="pt-4 space-y-3">
                                 {[
                                     '50 Monitors limit',
+                                    '50 Status Pages',
                                     '30-second frequency',
                                     'All regions available',
                                     '1 Team (invite up to 50 users)',

@@ -1,26 +1,37 @@
 "use client";
 
 import { toast } from "@/hooks/use-toast"
-import { StatusPage } from "@/types"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Copy, ExternalLink, Trash2, Radio } from "lucide-react"
+import { ExternalLink, Trash2, Radio, Activity } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { formatDateDifference } from "@/lib/utils"
+
+interface StatusPage {
+    id: string;
+    title: string;
+    subdomain: string;
+    createdAt: string;
+    monitors: {
+        url: string;
+        status: string;
+    }[];
+}
 
 const StatusPageList = () => {
   const [statusPages, setStatusPages] = useState<StatusPage[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const domain = process.env.NEXT_PUBLIC_CLIENT_URL ? new URL(process.env.NEXT_PUBLIC_CLIENT_URL).host : 'localhost:3000';
+  const domain = process.env.NEXT_PUBLIC_CLIENT_URL ? new URL(process.env.NEXT_PUBLIC_CLIENT_URL).host : 'beacn.online';
 
   const fetchStatusPages = async () => {
     setIsLoading(true);
     try {
       const response = await fetch("/api/status-pages");
-      if (!response.ok) {
-        throw new Error("Failed to fetch status pages");
+      if (response.status === 204) {
+        setStatusPages([]);
+        return;
       }
       const data = await response.json();
       setStatusPages(data);
@@ -38,28 +49,7 @@ const StatusPageList = () => {
 
   useEffect(() => {
     fetchStatusPages();
-
-    // Listen for refresh event
-    const handleRefresh = () => {
-      fetchStatusPages();
-    };
-
-    const element = document.getElementById('status-page-list');
-    if (element) {
-      element.addEventListener('refresh', handleRefresh);
-      return () => {
-        element.removeEventListener('refresh', handleRefresh);
-      };
-    }
   }, []);
-
-  const copyToClipboard = (subdomain: string) => {
-    navigator.clipboard.writeText(`https://${subdomain}.${domain}`);
-    toast({
-      title: "Copied!",
-      description: "URL copied to clipboard",
-    });
-  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -89,19 +79,20 @@ const StatusPageList = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         {[1, 2].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-6 bg-muted rounded w-1/3 mb-2"></div>
-              <div className="h-4 bg-muted rounded w-1/2"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-4 bg-muted rounded w-full mb-2"></div>
+          <Card key={i} className="animate-pulse shadow-none border">
+            <CardHeader className="pb-4">
+              <div className="h-10 w-10 bg-muted rounded mb-4"></div>
+              <div className="h-6 bg-muted rounded w-1/2 mb-2"></div>
               <div className="h-4 bg-muted rounded w-3/4"></div>
+            </CardHeader>
+            <CardContent className="pb-4">
+              <div className="h-4 bg-muted rounded w-full mb-2"></div>
+              <div className="h-4 bg-muted rounded w-2/3"></div>
             </CardContent>
-            <CardFooter>
-              <div className="h-9 bg-muted rounded w-24"></div>
+            <CardFooter className="pt-4 border-t bg-muted/5">
+              <div className="h-9 bg-muted rounded w-full"></div>
             </CardFooter>
           </Card>
         ))}
@@ -111,81 +102,85 @@ const StatusPageList = () => {
 
   if (statusPages.length === 0) {
     return (
-      <div className="text-center p-12 border rounded-lg">
-        <Radio className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-semibold mb-2">No status pages yet</h3>
-        <p className="text-muted-foreground mb-4">
-          Create your first status page to display uptime for your services
+      <div className="text-center p-20 border border-dashed rounded-3xl bg-muted/5">
+        <Radio className="h-10 w-10 mx-auto mb-4 text-muted-foreground/30" />
+        <h3 className="text-base font-bold">No status pages yet</h3>
+        <p className="text-xs text-muted-foreground mb-6 max-w-[250px] mx-auto leading-relaxed">
+          Create a public page to communicate service status and uptime history to your users.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="grid gap-6 sm:grid-cols-2">
       {statusPages.map((page) => (
-        <Card key={page.id}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{page.title}</CardTitle>
-              <Badge variant={page.monitor.status === "RUNNING" ? "outline" : "destructive"}>
-                {page.monitor.status === "RUNNING" ? "Active" : "Monitor Paused"}
+        <Card key={page.id} className="shadow-none border group hover:border-primary/30 transition-all overflow-hidden flex flex-col bg-card/50">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="size-9 rounded bg-primary/5 flex items-center justify-center text-primary border border-primary/10">
+                <Radio className="size-4" />
+              </div>
+              <Badge variant="secondary" className="text-[9px] uppercase font-black tracking-widest px-2 h-5 bg-emerald-500/10 text-emerald-600 border-transparent">
+                {page.monitors.length} {page.monitors.length === 1 ? 'Monitor' : 'Monitors'}
               </Badge>
             </div>
-            <CardDescription>
-              <span className="font-mono">{page.subdomain}.{domain}</span>
+            <CardTitle className="text-lg font-bold">{page.title}</CardTitle>
+            <CardDescription className="text-[10px] font-bold font-mono truncate bg-muted/50 p-1.5 rounded mt-2 uppercase tracking-widest text-muted-foreground">
+              {page.subdomain}.{domain}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-sm mb-1">
-              <span className="font-medium">Monitoring:</span> {page.monitor.url}
+          <CardContent className="pb-4 flex-1">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest opacity-60">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Activity className="size-3" /> Status</span>
+                <span className={page.monitors.every(m => m.status === 'RUNNING') ? 'text-emerald-500' : 'text-amber-500'}>
+                    {page.monitors.every(m => m.status === 'RUNNING') ? 'Operational' : 'Partial Issues'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest opacity-60">
+                <span className="text-muted-foreground">Created</span>
+                <span className="text-muted-foreground/80">{formatDateDifference(page.createdAt)}</span>
+              </div>
             </div>
-            {page.description && (
-              <p className="text-muted-foreground text-sm mt-2">{page.description}</p>
-            )}
-            <p className="text-xs text-muted-foreground mt-2">
-              Created {formatDateDifference(page.createdAt)}
-            </p>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => copyToClipboard(page.subdomain)}>
-                <Copy className="h-4 w-4 mr-1" />
-                Copy URL
-              </Button>
-              <Button size="sm" variant="outline" asChild>
-                <a
-                  href={`/status-preview/${page.subdomain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  View
-                </a>
-              </Button>
-            </div>
-
+          <CardFooter className="pt-4 border-t bg-muted/20 flex gap-2">
+            <Button size="sm" variant="ghost" className="h-9 text-[10px] font-black uppercase tracking-widest flex-1 bg-background hover:bg-primary/5 hover:text-primary transition-all" asChild>
+              <a href={`/statuspage/${page.id}`}>
+                Manage
+              </a>
+            </Button>
+            <Button size="sm" variant="ghost" className="h-9 text-[10px] font-black uppercase tracking-widest flex-1 bg-background hover:bg-primary/5 hover:text-primary transition-all" asChild>
+              <a
+                href={`/s/${page.subdomain}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="size-3 mr-1.5" />
+                View
+              </a>
+            </Button>
+            
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline" className="text-destructive border-destructive">
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete
+                <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-rose-500 hover:text-white hover:bg-rose-500 bg-background transition-all">
+                  <Trash2 className="size-3.5" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Status Page</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this status page? This action cannot be undone.
+                    Are you sure? This will immediately disable the public status page and remove all associated incident history.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => handleDelete(page.id)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="bg-rose-500 text-white hover:bg-rose-600"
                   >
-                    Delete
+                    Delete Page
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -194,6 +189,7 @@ const StatusPageList = () => {
         </Card>
       ))}
     </div>
+
   )
 }
 
