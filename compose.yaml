@@ -9,10 +9,10 @@ services:
     env_file:
       - ./server/.env.docker
     environment:
-    - NODE_ENV=production
+      - NODE_ENV=production
     networks:
       - zd-network
-  
+
   frontend:
     build:
       context: ./client
@@ -21,7 +21,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-    - NODE_ENV=production
+      - NODE_ENV=production
     depends_on:
       - backend
     networks:

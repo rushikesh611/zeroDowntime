@@ -2,7 +2,7 @@
 FROM node:22-alpine AS builder
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Set working directory
 WORKDIR /build
@@ -14,7 +14,7 @@ ENV DATABASE_URL="mongodb://build:build@localhost:27017/build"
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy prisma and source files
 COPY prisma ./prisma/
