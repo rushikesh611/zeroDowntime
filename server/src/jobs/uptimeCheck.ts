@@ -51,7 +51,8 @@ export function startUptimeCheck() {
                     body: monitor.body ?? undefined,
                     assertions: (monitor.assertions as any[]) ?? undefined,
                     host: monitor.host ?? undefined,
-                    port: monitor.port ?? undefined
+                    port: monitor.port ?? undefined,
+                    query: monitor.query ?? undefined
                 }, monitor.regions)
                 const isDown = results.some(result => !result.isUp)
 

@@ -1,5 +1,6 @@
 import express from 'express';
 import auth from '../middleware/auth.js';
+import { verifyStatusPageAccess, AuthorizedRequest } from '../middleware/authorize.js';
 import { logger } from '../utils/logger.js';
 import prisma from '../lib/prisma.js';
 
@@ -97,7 +98,7 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-router.get('/manage/:id', auth, async (req, res) => {
+router.get('/manage/:id', auth, verifyStatusPageAccess(), async (req: AuthorizedRequest, res) => {
   try {
     const { id } = req.params;
 
@@ -124,14 +125,6 @@ router.get('/manage/:id', auth, async (req, res) => {
       }
     });
 
-    if (!statusPage) {
-      return res.status(404).json({ error: 'Status page not found' });
-    }
-
-    if (statusPage.userId !== (req as any).user.id) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
-
     res.json(statusPage);
   } catch (error) {
     logger.error('Error fetching status page:', error);
@@ -140,22 +133,11 @@ router.get('/manage/:id', auth, async (req, res) => {
 });
 
 // Update status page (add/remove monitors, change metadata)
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, verifyStatusPageAccess(), async (req: AuthorizedRequest, res) => {
   try {
     const { id } = req.params;
     const { title, description, isPublic, customDomain, monitorIds } = req.body;
-
-    const statusPage = await prisma.statusPage.findUnique({
-      where: { id }
-    });
-
-    if (!statusPage) {
-      return res.status(404).json({ error: 'Status page not found' });
-    }
-
-    if (statusPage.userId !== (req as any).user.id) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    const existingStatusPage = req.statusPage!;
 
     // If updating monitorIds, verify ownership of all new monitors
     if (monitorIds) {
@@ -203,21 +185,9 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Delete status page
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, verifyStatusPageAccess(), async (req: AuthorizedRequest, res) => {
   try {
     const { id } = req.params;
-
-    const statusPage = await prisma.statusPage.findUnique({
-      where: { id }
-    });
-
-    if (!statusPage) {
-      return res.status(404).json({ error: 'Status page not found' });
-    }
-
-    if (statusPage.userId !== (req as any).user.id) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
 
     await prisma.statusPage.delete({ where: { id } });
     res.json({ message: 'Status page deleted successfully' });

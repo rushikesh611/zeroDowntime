@@ -41,7 +41,7 @@ router.get('/', auth, async (req, res) => {
     res.json(sources.map(s => ({
       id: s.id,
       name: s.name,
-      apiKey: s.apiKey,
+      apiKey: '••••••••••••••••',
       createdAt: s.createdAt
     })));
 

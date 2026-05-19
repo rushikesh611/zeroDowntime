@@ -24,7 +24,12 @@ export default async function auth(req: Request, res: Response, next: NextFuncti
 
   try {
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '$2a$04$Ls3wM2PzVdm.08FoS3sv3uANW.EkuhFhNdSeuBNpKkXInkXumGgkm') as JwtPayload;
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      logger.error('CRITICAL: JWT_SECRET is not configured.');
+      return res.status(500).json({ error: 'Internal server error: auth config error' });
+    }
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
     // Fetch user from the database using the decoded userId
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId }

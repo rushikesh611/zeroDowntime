@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MonitorLog } from "@/types";
 import { Timer, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     CartesianGrid,
     Legend,
@@ -46,7 +46,7 @@ interface CustomTooltipProps extends TooltipProps<number, string> {
     label?: string;
 }
 
-const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = [] }) => {
+const RegionalResponseChart: React.FC<RegionalResponseChartProps> = React.memo(({ data = [] }) => {
     const timeRanges: TimeRanges = {
         "1h": "1H",
         "6h": "6H",
@@ -309,6 +309,6 @@ const RegionalResponseChart: React.FC<RegionalResponseChartProps> = ({ data = []
             </div>
         </div>
     );
-};
+});
 
 export default RegionalResponseChart;

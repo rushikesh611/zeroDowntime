@@ -43,29 +43,33 @@ const StatusPage = () => {
     ? new URL(process.env.NEXT_PUBLIC_CLIENT_URL).host
     : 'beacn.online';
 
-  const fetchMonitors = async () => {
+  const fetchMonitors = async (signal?: AbortSignal) => {
     try {
-      const monRes = await fetch('/api/monitors');
+      const monRes = await fetch('/api/monitors?status=RUNNING', { signal });
       if (monRes.ok) {
         if (monRes.status === 204) {
           setMonitors([]);
         } else {
           const data = await monRes.json();
-          setMonitors(data.filter((monitor: Monitor) => monitor.status === 'RUNNING'));
+          setMonitors(data);
         }
       }
-    } catch (error) {
-      console.error('Error fetching monitors:', error);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching monitors:', error);
+      }
     } finally {
       setIsLoadingMonitors(false);
     }
   };
 
   useEffect(() => {
-    fetchMonitors();
+    const abortController = new AbortController();
+    fetchMonitors(abortController.signal);
     if (!user) {
-        checkAuth();
+      checkAuth();
     }
+    return () => abortController.abort();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {

@@ -125,95 +125,89 @@ export default function IncidentsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-1">
-            <Card className="shadow-none border border-amber-500/10 bg-amber-500/[0.02]">
-                <CardContent className="p-3.5 flex items-center gap-3">
-                    <div className="p-2 rounded bg-amber-500/10 text-amber-600">
-                        <AlertTriangle className="size-4" />
-                    </div>
-                    <div>
-                        <div className="text-xl font-bold text-amber-700 leading-tight">{activeCount}</div>
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ongoing</div>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card className="shadow-none border border-emerald-500/10 bg-emerald-500/[0.02]">
-                <CardContent className="p-3.5 flex items-center gap-3">
-                    <div className="p-2 rounded bg-emerald-500/10 text-emerald-600">
-                        <CheckCircle2 className="size-4" />
-                    </div>
-                    <div>
-                        <div className="text-xl font-bold text-emerald-700 leading-tight">{incidents.filter(i => i.status === 'RESOLVED').length}</div>
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Resolved</div>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card className="shadow-none border border-primary/10 bg-primary/[0.02]">
-                <CardContent className="p-3.5 flex items-center gap-3">
-                    <div className="p-2 rounded bg-primary/10 text-primary">
-                        <History className="size-4" />
-                    </div>
-                    <div>
-                        <div className="text-xl font-bold text-primary leading-tight">{incidents.length}</div>
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total</div>
-                    </div>
-                </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="border border-border bg-card rounded-lg p-5 flex items-center gap-4">
+            <div className="p-2.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">
+              <AlertTriangle className="size-4" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Active Incidents</div>
+              <div className="text-2xl font-bold text-amber-600 mt-1">{activeCount}</div>
+            </div>
+          </div>
+          <div className="border border-border bg-card rounded-lg p-5 flex items-center gap-4">
+            <div className="p-2.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+              <CheckCircle2 className="size-4" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Resolved Incidents</div>
+              <div className="text-2xl font-bold text-emerald-600 mt-1">{incidents.filter(i => i.status === 'RESOLVED').length}</div>
+            </div>
+          </div>
+          <div className="border border-border bg-card rounded-lg p-5 flex items-center gap-4">
+            <div className="p-2.5 rounded-md bg-muted text-muted-foreground border">
+              <History className="size-4" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Incidents</div>
+              <div className="text-2xl font-bold text-foreground mt-1">{incidents.length}</div>
+            </div>
+          </div>
         </div>
 
         {/* Incidents List */}
         <div className="space-y-4">
           {filteredIncidents.length === 0 ? (
-            <div className="p-16 border border-dashed rounded-xl flex flex-col items-center justify-center text-center bg-muted/5">
+            <div className="p-16 border border-dashed rounded-lg bg-card flex flex-col items-center justify-center text-center max-w-lg mx-auto">
               <ShieldAlert className="size-8 text-muted-foreground/30 mb-4" />
-              <h3 className="text-sm font-bold">No incidents found</h3>
-              <p className="text-[11px] text-muted-foreground mt-1 max-w-[250px] leading-relaxed">
+              <h3 className="text-sm font-bold text-foreground">No incidents found</h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[320px] leading-relaxed">
                 {filter === 'ACTIVE' ? "Everything looks good! No active incidents at the moment." : "No incident history recorded yet."}
               </p>
             </div>
           ) : (
             filteredIncidents.map(incident => (
-              <Card key={incident.id} className="shadow-none border hover:border-primary/40 transition-all cursor-pointer group overflow-hidden bg-card/50" onClick={() => router.push(`/incidents/${incident.id}`)}>
-                <CardContent className="p-0">
-                  <div className="flex items-stretch h-full">
-                    {/* Severity Indicator Strip */}
-                    <div className={`w-1.5 shrink-0 
-                      ${incident.severity === 'SEV1' ? 'bg-rose-500' : 
-                        incident.severity === 'SEV2_CRITICAL' ? 'bg-orange-600' : 
-                        incident.severity === 'SEV2' ? 'bg-amber-500' : 'bg-blue-400'}
-                    `} />
-                    
-                    <div className="px-4 py-3 flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-widest px-1.5 h-4 border-muted-foreground/20 text-muted-foreground/60">
-                            {incident.statusPage.title}
-                          </Badge>
-                          <Badge variant="secondary" className={`text-[8px] font-bold uppercase tracking-widest px-1.5 h-4 border-transparent 
-                            ${incident.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                            {incident.status}
-                          </Badge>
-                        </div>
-                        <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate max-w-md">{incident.title}</h3>
-                        <div className="flex items-center gap-3 text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest">
-                          <div className="flex items-center gap-1"><Clock className="size-2.5" /> {format(new Date(incident.createdAt), 'MMM d, HH:mm')}</div>
-                          <div className="flex items-center gap-1"><MessageSquare className="size-2.5" /> {incident.updates?.length || 0} UPDATES</div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-4 shrink-0 self-end sm:self-center">
-                        <div className="text-right hidden sm:block">
-                            <div className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest">Severity</div>
-                            <div className="text-[10px] font-black uppercase tracking-tight text-foreground/80">{incident.severity.replace('_', ' ')}</div>
-                        </div>
-                        <div className="p-1 rounded-full group-hover:bg-primary/10 transition-all text-muted-foreground/10 group-hover:text-primary">
-                          <ChevronRight className="size-3.5" />
-                        </div>
-                      </div>
+              <div 
+                key={incident.id} 
+                className="border border-border bg-card rounded-lg overflow-hidden flex cursor-pointer hover:border-border/80 transition-colors group"
+                onClick={() => router.push(`/incidents/${incident.id}`)}
+              >
+                {/* Severity Indicator Strip */}
+                <div className={`w-1.5 shrink-0 
+                  ${incident.severity === 'SEV1' ? 'bg-rose-500' : 
+                    incident.severity === 'SEV2_CRITICAL' ? 'bg-orange-600' : 
+                    incident.severity === 'SEV2' ? 'bg-amber-500' : 'bg-blue-400'}
+                `} />
+                
+                <div className="px-5 py-4 flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-wider px-1.5 h-4 border-muted-foreground/20 text-muted-foreground/60 rounded-md">
+                        {incident.statusPage.title}
+                      </Badge>
+                      <Badge variant="secondary" className={`text-[8px] font-bold uppercase tracking-wider px-1.5 h-4 border border-transparent rounded-md 
+                        ${incident.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border-amber-500/20'}`}>
+                        {incident.status}
+                      </Badge>
+                    </div>
+                    <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate max-w-md">{incident.title}</h3>
+                    <div className="flex items-center gap-3 text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                      <div className="flex items-center gap-1"><Clock className="size-2.5" /> {format(new Date(incident.createdAt), 'MMM d, HH:mm')}</div>
+                      <div className="flex items-center gap-1"><MessageSquare className="size-2.5" /> {incident.updates?.length || 0} UPDATES</div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  
+                  <div className="flex items-center gap-4 shrink-0 self-end sm:self-center">
+                    <div className="text-right hidden sm:block">
+                        <div className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest">Severity</div>
+                        <div className="text-[10px] font-black uppercase tracking-tight text-foreground/80">{incident.severity.replace('_', ' ')}</div>
+                    </div>
+                    <div className="p-1 rounded-full group-hover:bg-muted transition-colors text-muted-foreground/40 group-hover:text-foreground">
+                      <ChevronRight className="size-4" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))
           )}
         </div>

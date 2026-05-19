@@ -10,39 +10,25 @@ interface MonitorCheckParams {
     assertions?: any[];
     host?: string;
     port?: number;
+    query?: string;
 }
 
 export async function checkEndpoint(params: MonitorCheckParams, regions: string[]) {
     console.log(params)
-    if (params.monitorType === 'http') {
-
-        logger.info("HTTP_CHECK_START", {
-            url: params.url,
-            method: params.method,
+    const supportedTypes = ['http', 'tcp', 'dns', 'ssl', 'ping', 'graphql'];
+    if (supportedTypes.includes(params.monitorType)) {
+        const target = params.url || (params.host ? `${params.host}:${params.port || ''}` : 'Unknown');
+        logger.info(`${params.monitorType.toUpperCase()}_CHECK_START`, {
+            target,
+            monitorType: params.monitorType,
             regions
         });
-        console.log('Checking endpoint:', params.url, 'in regions:', regions);
+        console.log(`Checking ${params.monitorType.toUpperCase()} endpoint:`, target, 'in regions:', regions);
 
         const results = await Promise.all(regions.map(region => checkFromRegion(params, region)));
 
-        logger.info('HTTP_CHECK_COMPLETE', {
-            url: params.url,
-            results
-        });
-
-        return results;
-    } else if (params.monitorType === 'tcp') {
-        logger.info("TCP_CHECK_START", {
-            host: params.host,
-            port: params.port,
-            regions
-        });
-        console.log('Checking endpoint:', params.host + ':' + params.port, 'in regions:', regions);
-
-        const results = await Promise.all(regions.map(region => checkFromRegion(params, region)));
-
-        logger.info('TCP_CHECK_COMPLETE', {
-            host: params.host + ':' + params.port,
+        logger.info(`${params.monitorType.toUpperCase()}_CHECK_COMPLETE`, {
+            target,
             results
         });
 
@@ -77,7 +63,8 @@ async function checkFromRegion(params: MonitorCheckParams, region: string) {
             body: params.body,
             assertions: params.assertions,
             host: params.host,
-            port: params.port
+            port: params.port,
+            query: params.query
         });
 
         const command = new InvokeCommand(lambdaParams);

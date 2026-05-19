@@ -138,83 +138,86 @@ const NotificationCenter = () => {
 
                 {/* Setup Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="shadow-none border hover:border-primary/20 transition-colors group cursor-pointer" onClick={() => handleOpenSheet('Email')}>
-                        <CardContent className="p-5 flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-                                <Mail className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-sm font-semibold">Email Alerts</h3>
-                                <p className="text-xs text-muted-foreground">Get downtime notifications in your inbox.</p>
-                            </div>
-                            <Button variant="ghost" size="icon" className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <div 
+                        className="border border-border bg-card rounded-lg p-5 flex items-center gap-4 hover:border-border/80 transition-colors group cursor-pointer" 
+                        onClick={() => handleOpenSheet('Email')}
+                    >
+                        <div className="h-10 w-10 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                            <Mail className="h-5 w-5" />
+                        </div>
+                        <div className="flex-grow">
+                            <h3 className="text-sm font-semibold text-foreground">Email Alerts</h3>
+                            <p className="text-xs text-muted-foreground">Get downtime notifications in your inbox.</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
 
-                    <Card className="shadow-none border hover:border-primary/20 transition-colors group cursor-pointer" onClick={() => handleOpenSheet('Webhook')}>
-                        <CardContent className="p-5 flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
-                                <Webhook className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-sm font-semibold">Webhook integration</h3>
-                                <p className="text-xs text-muted-foreground">Send POST requests to your own API or Slack.</p>
-                            </div>
-                            <Button variant="ghost" size="icon" className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <div 
+                        className="border border-border bg-card rounded-lg p-5 flex items-center gap-4 hover:border-border/80 transition-colors group cursor-pointer" 
+                        onClick={() => handleOpenSheet('Webhook')}
+                    >
+                        <div className="h-10 w-10 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
+                            <Webhook className="h-5 w-5" />
+                        </div>
+                        <div className="flex-grow">
+                            <h3 className="text-sm font-semibold text-foreground">Webhook Integration</h3>
+                            <p className="text-xs text-muted-foreground">Send POST requests to your own API or Slack.</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
 
-                {/* Notifiers List */}
-                <Card className="shadow-none border">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-semibold">Configured Channels</CardTitle>
-                        <CardDescription className="text-xs">Channels currently being used for monitoring alerts.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-0">
+                {/* Configured Channels */}
+                <div className="space-y-0">
+                    <div className="flex flex-col gap-1.5 bg-muted/20 border-t border-x border-border/80 px-5 py-4 rounded-t-lg mt-6">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Configured Channels</span>
+                        <span className="text-xs text-muted-foreground">Channels currently being used for monitoring alerts.</span>
+                    </div>
+
+                    <div className="border-b border-x border-border/80 rounded-b-lg bg-card overflow-hidden">
                         {notifiers.length === 0 ? (
-                            <div className="py-12 text-center">
-                                <div className="h-10 w-10 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <div className="py-16 text-center max-w-sm mx-auto">
+                                <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center mx-auto mb-3 border">
                                     <Bell className="h-5 w-5 text-muted-foreground" />
                                 </div>
-                                <h3 className="text-sm font-medium">No notifiers configured</h3>
-                                <p className="text-xs text-muted-foreground mt-1">Start by adding an email or webhook channel above.</p>
+                                <h3 className="text-sm font-bold text-foreground">No channels configured</h3>
+                                <p className="text-xs text-muted-foreground mt-1">Start by adding an email or webhook alert channel above.</p>
                             </div>
                         ) : (
                             <Table>
-                                <TableHeader className="bg-muted/30">
+                                <TableHeader className="bg-muted/10">
                                     <TableRow>
-                                        <TableHead className="text-[10px] font-bold uppercase tracking-wider h-9">Name</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase tracking-wider h-9">Type</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase tracking-wider h-9">Details</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase tracking-wider h-9 text-right">Actions</TableHead>
+                                        <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 text-foreground">Name</TableHead>
+                                        <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 text-foreground">Type</TableHead>
+                                        <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 text-foreground">Details</TableHead>
+                                        <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 text-right pr-6 text-foreground">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {notifiers.map((notifier) => (
-                                        <TableRow key={notifier.id} className="group">
-                                            <TableCell className="py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`h-6 w-6 rounded flex items-center justify-center text-[10px] ${notifier.type === 'Email' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
-                                                        {notifier.type === 'Email' ? <Mail className="h-3 w-3" /> : <Webhook className="h-3 w-3" />}
+                                        <TableRow key={notifier.id} className="group hover:bg-muted/30 transition-colors">
+                                            <TableCell className="py-3.5">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`h-7 w-7 rounded-md border flex items-center justify-center text-[10px] ${notifier.type === 'Email' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-purple-500/10 text-purple-500 border-purple-500/20'}`}>
+                                                        {notifier.type === 'Email' ? <Mail className="h-3.5 w-3.5" /> : <Webhook className="h-3.5 w-3.5" />}
                                                     </div>
-                                                    <span className="text-sm font-medium">{notifier.name}</span>
+                                                    <span className="text-sm font-semibold text-foreground">{notifier.name}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="py-3">
-                                                <Badge variant="secondary" className="text-[10px] h-5">{notifier.type}</Badge>
+                                            <TableCell className="py-3.5">
+                                                <Badge variant="secondary" className="text-[10px] h-5 rounded-md">{notifier.type}</Badge>
                                             </TableCell>
-                                            <TableCell className="py-3">
-                                                <span className="text-xs text-muted-foreground font-mono">{notifier.details}</span>
+                                            <TableCell className="py-3.5">
+                                                <span className="text-[10px] text-muted-foreground font-mono bg-muted/30 px-2 py-0.5 rounded border">{notifier.details}</span>
                                             </TableCell>
-                                            <TableCell className="py-3 text-right">
+                                            <TableCell className="py-3.5 text-right pr-6">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <EllipsisIcon className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -237,8 +240,8 @@ const NotificationCenter = () => {
                                 </TableBody>
                             </Table>
                         )}
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </div>
 
             {/* Creation / Edit Sheet */}

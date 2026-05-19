@@ -1,5 +1,5 @@
 // Monitor Types
-export type MonitorType = 'http' | 'tcp';
+export type MonitorType = 'http' | 'tcp' | 'dns' | 'ssl' | 'ping' | 'graphql';
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
 
 // Assertion Types
@@ -27,6 +27,9 @@ export interface MonitorInput {
   regions: string[];
   host?: string;
   port?: number;
+  dnsRecordType?: string;
+  expectedIp?: string;
+  query?: string;
 }
 
 // Monitor Check Result Types

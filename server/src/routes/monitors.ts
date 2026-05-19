@@ -1,9 +1,101 @@
 import express from 'express';
+import dns from 'dns';
+import { promisify } from 'util';
+import tls from 'tls';
+import { URL } from 'url';
 import auth from '../middleware/auth.js';
+import { verifyMonitorAccess, AuthorizedRequest } from '../middleware/authorize.js';
 import { checkEndpoint } from '../services/monitoringService.js';
 import { logger } from '../utils/logger.js';
 import { MonitorInput } from '../types/monitor.js';
 import prisma from '../lib/prisma.js';
+
+const lookupPromise = promisify(dns.lookup);
+const sslCache: Record<string, { days: number | null; timestamp: number }> = {};
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+function isPrivateIP(ip: string): boolean {
+    // IPv4 Checks
+    if (/^(127\.|10\.|192\.168\.|169\.254\.)/.test(ip)) return true;
+    if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip)) return true;
+    // IPv6 Checks
+    if (ip === '::1' || ip.startsWith('fe80:') || ip.startsWith('fc00:') || ip.startsWith('fd00:')) return true;
+    return false;
+}
+
+async function isSafeHost(host: string): Promise<boolean> {
+    if (isPrivateIP(host)) return false;
+    try {
+        const { address } = await lookupPromise(host);
+        if (isPrivateIP(address)) return false;
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function getSSLDaysRemaining(host: string, port = 443): Promise<number | null> {
+    return new Promise((resolve) => {
+        let resolved = false;
+        const socket = tls.connect({
+            host,
+            port,
+            servername: host,
+            timeout: 5000,
+            rejectUnauthorized: false
+        }, () => {
+            const cert = socket.getPeerCertificate();
+            socket.destroy();
+            if (!resolved) {
+                resolved = true;
+                if (cert && cert.valid_to) {
+                    const expiry = new Date(cert.valid_to);
+                    const diffTime = expiry.getTime() - Date.now();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    resolve(diffDays);
+                } else {
+                    resolve(null);
+                }
+            }
+        });
+        
+        socket.on('error', () => {
+            if (!resolved) {
+                resolved = true;
+                resolve(null);
+            }
+        });
+        
+        socket.on('timeout', () => {
+            socket.destroy();
+            if (!resolved) {
+                resolved = true;
+                resolve(null);
+            }
+        });
+    });
+}
+
+async function getCachedSSLDaysRemaining(host: string, port = 443): Promise<number | null> {
+    const cacheKey = `${host}:${port}`;
+    const cached = sslCache[cacheKey];
+    const now = Date.now();
+
+    if (cached && (now - cached.timestamp < CACHE_TTL)) {
+        return cached.days;
+    }
+
+    const isSafe = await isSafeHost(host);
+    if (!isSafe) {
+        logger.warn(`SSRF Blocked: Unsafe SSL check requested for host: ${host}`);
+        sslCache[cacheKey] = { days: null, timestamp: now };
+        return null;
+    }
+
+    const days = await getSSLDaysRemaining(host, port);
+    sslCache[cacheKey] = { days, timestamp: now };
+    return days;
+}
 
 const router = express.Router();
 
@@ -44,8 +136,6 @@ router.post('/', auth, async (req, res) => {
             return res.status(400).json({ error: `Maximum regions for your ${user.plan} plan is ${maxRegions}.` });
         }
 
-        console.log('Received monitor data:', monitorData);
-        // Prepare monitor data based on type
         const baseMonitorData = {
             name: monitorData.name,
             monitorType: monitorData.monitorType,
@@ -55,43 +145,71 @@ router.post('/', auth, async (req, res) => {
             regions: monitorData.regions
         };
 
-        console.log('Base monitor data:', baseMonitorData);
+        let monitorCreateData: any = { ...baseMonitorData };
 
-        // Add HTTP-specific fields only if monitorType is http
-        const monitorCreateData = monitorData.monitorType === 'http'
-            ? {
-                ...baseMonitorData,
+        if (monitorData.monitorType === 'http') {
+            monitorCreateData = {
+                ...monitorCreateData,
                 url: monitorData.url,
                 method: monitorData.method,
                 headers: monitorData.headers,
                 body: monitorData.body,
                 assertions: monitorData.assertions ? JSON.parse(JSON.stringify(monitorData.assertions)) : undefined,
-            } : monitorData.monitorType === 'tcp'
-                ? {
-                    ...baseMonitorData,
-                    host: monitorData.host,
-                    port: monitorData.port,
-                }
-                : baseMonitorData;
+            };
+        } else if (monitorData.monitorType === 'tcp') {
+            monitorCreateData = {
+                ...monitorCreateData,
+                host: monitorData.host,
+                port: monitorData.port,
+            };
+        } else if (monitorData.monitorType === 'dns') {
+            monitorCreateData = {
+                ...monitorCreateData,
+                host: monitorData.host,
+                dnsRecordType: monitorData.dnsRecordType,
+                expectedIp: monitorData.expectedIp,
+                assertions: monitorData.assertions ? JSON.parse(JSON.stringify(monitorData.assertions)) : undefined,
+            };
+        } else if (monitorData.monitorType === 'ssl') {
+            monitorCreateData = {
+                ...monitorCreateData,
+                host: monitorData.host,
+                port: monitorData.port || 443,
+                assertions: monitorData.assertions ? JSON.parse(JSON.stringify(monitorData.assertions)) : undefined,
+            };
+        } else if (monitorData.monitorType === 'ping') {
+            monitorCreateData = {
+                ...monitorCreateData,
+                host: monitorData.host,
+                assertions: monitorData.assertions ? JSON.parse(JSON.stringify(monitorData.assertions)) : undefined,
+            };
+        } else if (monitorData.monitorType === 'graphql') {
+            monitorCreateData = {
+                ...monitorCreateData,
+                url: monitorData.url,
+                headers: monitorData.headers,
+                query: monitorData.query,
+                assertions: monitorData.assertions ? JSON.parse(JSON.stringify(monitorData.assertions)) : undefined,
+            };
+        }
 
         const monitor = await prisma.monitor.create({
             data: monitorCreateData
-        })
+        });
         res.status(201).json(monitor);
         logger.info('Monitor created successfully:', { monitorId: monitor.id });
     } catch (error) {
         logger.error('Error creating monitor:', error);
-        console.log(error);
         res.status(500).json({ error: 'Internal server error' });
     }
-})
+});
 
 // Get all monitors (owned + shared via team)
 router.get('/', auth, async (req, res) => {
     try {
         const userId = (req as any).user.id;
+        const { status } = req.query;
 
-        // Find teams user is a member of and their roles in those teams
         const memberships = await prisma.teamMember.findMany({
             where: { userId },
             include: { team: { include: { admin: true } } }
@@ -100,11 +218,10 @@ router.get('/', auth, async (req, res) => {
         const teamRoles = memberships.reduce((acc, m) => {
             acc[m.teamId] = { role: m.role, adminName: m.team.admin?.username || 'Unknown' };
             return acc;
-        }, {} as Record<string, { role: string, adminName: string }>);
+        }, {} as Record<string, { role: string; adminName: string }>);
 
         const teamIds = Object.keys(teamRoles);
 
-        // 1. Get IDs of monitors shared with this user via teams
         const sharedMonitorIds = await prisma.monitorTeam.findMany({
             where: { teamId: { in: teamIds } },
             select: { monitorId: true }
@@ -112,8 +229,13 @@ router.get('/', auth, async (req, res) => {
 
         const monitorIds = sharedMonitorIds.map(sm => sm.monitorId);
 
+        const statusFilter = status && typeof status === 'string'
+            ? { status: status.toUpperCase() }
+            : {};
+
         const monitors = await prisma.monitor.findMany({
             where: {
+                ...statusFilter,
                 OR: [
                     { userId: userId },
                     { id: { in: monitorIds } }
@@ -126,134 +248,137 @@ router.get('/', auth, async (req, res) => {
             }
         });
 
-        const monitorsWithRoles = monitors.map(monitor => {
-            if (monitor.userId === userId) {
-                return { ...monitor, role: 'OWNER' };
+        const twentyFourHoursAgo = new Date(Date.now() - 86400000);
+        const logs = await prisma.monitorLog.findMany({
+            where: {
+                monitorId: { in: monitors.map(m => m.id) },
+                lastCheckedAt: { gte: twentyFourHoursAgo }
+            },
+            orderBy: { lastCheckedAt: 'asc' }
+        });
+
+        const logsByMonitor: Record<string, typeof logs> = {};
+        logs.forEach(log => {
+            if (!logsByMonitor[log.monitorId]) {
+                logsByMonitor[log.monitorId] = [];
+            }
+            logsByMonitor[log.monitorId].push(log);
+        });
+
+        const monitorsWithStats = await Promise.all(monitors.map(async (monitor) => {
+            const mLogs = logsByMonitor[monitor.id] || [];
+
+            const validLogs = mLogs.filter(l => l.responseTime > 0);
+            const avgLatency = validLogs.length > 0
+                ? Math.round(validLogs.reduce((sum, l) => sum + l.responseTime, 0) / validLogs.length)
+                : null;
+
+            const now = Date.now();
+            const uptimeHistory = Array.from({ length: 24 }).map((_, idx) => {
+                const bucketStart = now - (24 - idx) * 3600000;
+                const bucketEnd = now - (23 - idx) * 3600000;
+                
+                const bucketLogs = mLogs.filter(l => {
+                    const t = new Date(l.lastCheckedAt).getTime();
+                    return t >= bucketStart && t < bucketEnd;
+                });
+
+                if (bucketLogs.length === 0) {
+                    return { isUp: true, hasData: false };
+                }
+                const isUp = bucketLogs.every(l => l.isUp);
+                return { isUp, hasData: true };
+            });
+
+            let sslDaysRemaining: number | null = null;
+            const isHttps = monitor.url?.startsWith('https://');
+            const isSslType = monitor.monitorType === 'ssl';
+
+            if (isHttps || isSslType) {
+                try {
+                    let host = '';
+                    let port = 443;
+                    if (isHttps && monitor.url) {
+                        const parsed = new URL(monitor.url);
+                        host = parsed.hostname;
+                        if (parsed.port) port = parseInt(parsed.port);
+                    } else if (monitor.host) {
+                        host = monitor.host;
+                        if (host.includes(':')) {
+                            const parts = host.split(':');
+                            host = parts[0];
+                            port = parseInt(parts[1]) || 443;
+                        }
+                        if (monitor.port) port = monitor.port;
+                    }
+
+                    if (host) {
+                        sslDaysRemaining = await getCachedSSLDaysRemaining(host, port);
+                    }
+                } catch (err) {
+                    console.error('SSL check error:', err);
+                }
             }
 
-            // Find which shared team gives the user the highest permission
-            const relevantSharedTeams = monitor.sharedTeams.filter(st => teamIds.includes(st.teamId));
-
-            let bestRole: 'READ' | 'WRITE' = 'READ';
+            let role = 'OWNER';
             let ownerName = '';
 
-            relevantSharedTeams.forEach(st => {
-                const teamInfo = teamRoles[st.teamId];
-                if (teamInfo) {
-                    if (teamInfo.role === 'WRITE') bestRole = 'WRITE';
-                    ownerName = teamInfo.adminName;
-                }
-            });
+            if (monitor.userId === userId) {
+                role = 'OWNER';
+            } else {
+                const relevantSharedTeams = monitor.sharedTeams.filter(st => teamIds.includes(st.teamId));
+                let bestRole: 'READ' | 'WRITE' = 'READ';
+                relevantSharedTeams.forEach(st => {
+                    const teamInfo = teamRoles[st.teamId];
+                    if (teamInfo) {
+                        if (teamInfo.role === 'WRITE') bestRole = 'WRITE';
+                        ownerName = teamInfo.adminName;
+                    }
+                });
+                role = bestRole;
+            }
 
             return {
                 ...monitor,
-                role: bestRole,
-                ownerName
+                role,
+                ownerName,
+                avgLatency,
+                uptimeHistory,
+                sslDaysRemaining
             };
-        });
+        }));
 
-        res.json(monitorsWithRoles);
+        res.json(monitorsWithStats);
         logger.info('Monitors retrieved successfully:', { monitorsCount: monitors.length });
     } catch (error: any) {
         logger.error('Error getting monitors:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-})
+});
 
 // Get single monitor
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, verifyMonitorAccess('READ'), async (req: AuthorizedRequest, res) => {
     try {
-        const { id } = req.params;
-        const userId = (req as any).user.id;
-
-        const monitor = await prisma.monitor.findUnique({
-            where: { id },
-            include: { notifier: true }
+        res.json({
+            ...req.monitor,
+            role: req.monitorRole,
+            ownerName: req.monitorOwnerName
         });
-
-        if (!monitor) {
-            return res.status(404).json({ error: 'Monitor not found' });
-        }
-
-        let role = 'OWNER';
-        let ownerName = '';
-
-        if (monitor.userId !== userId) {
-            // Check if monitor is shared with any team the user is in
-            // Refactored for MongoDB compatibility
-            const userTeams = await prisma.teamMember.findMany({
-                where: { userId },
-                select: { teamId: true, role: true }
-            });
-
-            const teamIds = userTeams.map(ut => ut.teamId);
-
-            const monitorShared = await prisma.monitorTeam.findFirst({
-                where: {
-                    monitorId: id,
-                    teamId: { in: teamIds }
-                },
-                include: {
-                    team: {
-                        include: {
-                            admin: true
-                        }
-                    }
-                }
-            });
-
-            if (!monitorShared) {
-                logger.warn('Access denied for monitor:', { monitorId: id, userId });
-                return res.status(403).json({ error: 'Access denied' });
-            }
-
-            // Find the user's specific membership in the team that shares this monitor
-            const userInTeam = userTeams.find(ut => ut.teamId === monitorShared.teamId);
-            role = userInTeam?.role || 'READ';
-            ownerName = monitorShared.team.admin?.username || 'Unknown';
-        }
-
-        res.json({ ...monitor, role, ownerName });
-        logger.info('Monitor retrieved successfully:', { monitorId: monitor.id });
+        logger.info('Monitor retrieved successfully:', { monitorId: req.monitor.id });
     } catch (error) {
         logger.error('Error getting monitor:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-})
+});
 
 // Update monitor
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, verifyMonitorAccess('WRITE'), async (req: AuthorizedRequest, res) => {
     try {
         const { id } = req.params;
-        const userId = (req as any).user.id;
-        const { name, url, monitorType, method, headers, body, notifierId, frequency, status, regions, assertions } = req.body;
+        const { name, url, monitorType, method, headers, body, notifierId, frequency, status, regions, assertions, host, port, dnsRecordType, expectedIp, query } = req.body;
+        const existingMonitor = req.monitor;
 
-        const existingMonitor = await prisma.monitor.findUnique({ where: { id } });
-        if (!existingMonitor) return res.status(404).json({ error: 'Monitor not found' });
-
-        if (existingMonitor.userId !== userId) {
-            const userTeamsWithWrite = await prisma.teamMember.findMany({
-                where: { userId, role: 'WRITE' },
-                select: { teamId: true }
-            });
-
-            const teamIds = userTeamsWithWrite.map(ut => ut.teamId);
-
-            const hasWriteAccess = await prisma.monitorTeam.findFirst({
-                where: {
-                    monitorId: id,
-                    teamId: { in: teamIds }
-                }
-            });
-
-            if (!hasWriteAccess) {
-                return res.status(403).json({ error: 'You do not have permission to modify this monitor.' });
-            }
-        }
-
-        // Check if frequency/regions update violates plan
         if (frequency !== undefined || regions !== undefined) {
-            // We need to check the monitor owner's plan
             const owner = await prisma.user.findUnique({ where: { id: existingMonitor.userId } });
             if (owner) {
                 let minFrequency = 900;
@@ -289,6 +414,11 @@ router.put('/:id', auth, async (req, res) => {
         if (status !== undefined) updateData.status = status;
         if (regions !== undefined) updateData.regions = regions;
         if (assertions !== undefined) updateData.assertions = assertions ? JSON.parse(JSON.stringify(assertions)) : undefined;
+        if (host !== undefined) updateData.host = host;
+        if (port !== undefined) updateData.port = port;
+        if (dnsRecordType !== undefined) updateData.dnsRecordType = dnsRecordType;
+        if (expectedIp !== undefined) updateData.expectedIp = expectedIp;
+        if (query !== undefined) updateData.query = query;
 
         const updatedMonitor = await prisma.monitor.update({
             where: { id },
@@ -302,126 +432,60 @@ router.put('/:id', auth, async (req, res) => {
         logger.error('Error updating monitor:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-})
-
+});
 
 // Delete monitor
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, verifyMonitorAccess('WRITE'), async (req: AuthorizedRequest, res) => {
     try {
         const { id } = req.params;
-        const userId = (req as any).user.id;
-
-        const existingMonitor = await prisma.monitor.findUnique({ where: { id } });
-        if (!existingMonitor) return res.status(404).json({ error: 'Monitor not found' });
-
-        if (existingMonitor.userId !== userId) {
-            const userTeamsWithWrite = await prisma.teamMember.findMany({
-                where: { userId, role: 'WRITE' },
-                select: { teamId: true }
-            });
-
-            const teamIds = userTeamsWithWrite.map(ut => ut.teamId);
-
-            const hasWriteAccess = await prisma.monitorTeam.findFirst({
-                where: {
-                    monitorId: id,
-                    teamId: { in: teamIds }
-                }
-            });
-
-            if (!hasWriteAccess) {
-                return res.status(403).json({ error: 'You do not have permission to delete this monitor.' });
-            }
-        }
-
-        // The status page will be auto-deleted due to the cascading delete in prisma schema
         await prisma.monitor.delete({
             where: { id }
-        })
-
+        });
         res.json({ message: 'Monitor deleted successfully' });
         logger.info('Monitor deleted successfully:', { monitorId: id });
     } catch (error) {
         logger.error('Error deleting monitor:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-})
+});
 
 // Manually check monitor uptime
-router.post('/:id/check', auth, async (req, res) => {
+router.post('/:id/check', auth, verifyMonitorAccess('READ'), async (req: AuthorizedRequest, res) => {
     try {
-        const { id } = req.params;
-        const userId = (req as any).user.id;
+        const monitor = req.monitor;
 
-        const monitor = await prisma.monitor.findUnique({
-            where: { id }
-        });
-        if (!monitor) {
-            logger.info('Monitor not found:', { monitorId: id });
-            return res.status(404).json({ error: 'Monitor not found' });
+        if (monitor.monitorType !== 'http' && monitor.monitorType !== 'graphql') {
+            return res.status(400).json({ error: 'Only HTTP or GraphQL monitors can be checked manually' });
         }
 
-        if (monitor.userId !== userId) {
-            const userTeams = await prisma.teamMember.findMany({
-                where: { userId },
-                select: { teamId: true }
-            });
-            const teamIds = userTeams.map(ut => ut.teamId);
-            const hasAccess = await prisma.monitorTeam.findFirst({
-                where: { monitorId: id, teamId: { in: teamIds } }
-            });
-            if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
-        }
-
-        // Ensure the monitor is HTTP type
-        if (monitor.monitorType !== 'http') {
-            return res.status(400).json({ error: 'Only HTTP monitors can be checked manually' });
-        }
-
-        if (!monitor.method) {
+        if (monitor.monitorType === 'http' && !monitor.method) {
             return res.status(400).json({ error: 'HTTP method is required' });
         }
 
-        // Prepare check parameters for HTTP monitor
         const monitorResults = await checkEndpoint({
             url: monitor.url ?? undefined,
-            monitorType: 'http',
+            monitorType: monitor.monitorType,
             method: monitor.method ?? undefined,
             headers: (monitor.headers as Record<string, string>) ?? undefined,
             body: monitor.body ?? undefined,
-            assertions: (monitor.assertions as any[]) ?? undefined  // ADD THIS LINE
+            assertions: (monitor.assertions as any[]) ?? undefined,
+            query: monitor.query ?? undefined
         }, monitor.regions);
 
         res.json(monitorResults);
-        logger.info('Uptime check completed successfully:', { monitorId: id });
+        logger.info('Uptime check completed successfully:', { monitorId: monitor.id });
     } catch (error) {
         logger.error('Error checking uptime:', error);
         res.status(500).json({ error: 'Error checking uptime' });
     }
 });
 
-// Get monitor logs (last 24 hours only for performance)
-router.get('/:id/logs', auth, async (req, res) => {
+// Get monitor logs
+router.get('/:id/logs', auth, verifyMonitorAccess('READ'), async (req: AuthorizedRequest, res) => {
     try {
         const { id } = req.params;
         const { aggregate, interval = '15' } = req.query;
-        const userId = (req as any).user.id;
         const twentyFourHoursAgo = new Date(Date.now() - 86400000);
-
-        const monitor = await prisma.monitor.findUnique({ where: { id } });
-        if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
-
-        if (monitor.userId !== userId) {
-            const userTeams = await prisma.teamMember.findMany({
-                where: { userId },
-                select: { teamId: true }
-            });
-            const teamIds = userTeams.map(ut => ut.teamId);
-            const hasAccess = await prisma.monitorTeam.findFirst({
-                where: { monitorId: id, teamId: { in: teamIds } }
-            });
-            if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
-        }
 
         const logs = await prisma.monitorLog.findMany({
             where: {
@@ -447,7 +511,7 @@ router.get('/:id/logs', auth, async (req, res) => {
                         responseTime: 0,
                         count: 0,
                         status: 'UP'
-                    };
+                      };
                 }
 
                 buckets[key].responseTime += log.responseTime || 0;
@@ -473,27 +537,10 @@ router.get('/:id/logs', auth, async (req, res) => {
     }
 });
 
-// get monitor logs by region
-router.get('/:id/logs/:region', auth, async (req, res) => {
+// Get monitor logs by region
+router.get('/:id/logs/:region', auth, verifyMonitorAccess('READ'), async (req: AuthorizedRequest, res) => {
     try {
         const { id, region } = req.params;
-        const userId = (req as any).user.id;
-
-        const monitor = await prisma.monitor.findUnique({ where: { id } });
-        if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
-
-        if (monitor.userId !== userId) {
-            const userTeams = await prisma.teamMember.findMany({
-                where: { userId },
-                select: { teamId: true }
-            });
-            const teamIds = userTeams.map(ut => ut.teamId);
-            const hasAccess = await prisma.monitorTeam.findFirst({
-                where: { monitorId: id, teamId: { in: teamIds } }
-            });
-            if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
-        }
-
         const logs = await prisma.monitorLog.findMany({
             where: { monitorId: id, region },
             orderBy: { lastCheckedAt: 'desc' }
@@ -505,32 +552,14 @@ router.get('/:id/logs/:region', auth, async (req, res) => {
     }
 });
 
-// get monitor logs for last 1 hour
-router.get('/:id/logs/hour', auth, async (req, res) => {
+// Get monitor logs for last 1 hour
+router.get('/:id/logs/hour', auth, verifyMonitorAccess('READ'), async (req: AuthorizedRequest, res) => {
     try {
         const { id } = req.params;
-        const userId = (req as any).user.id;
-
-        const monitor = await prisma.monitor.findUnique({ where: { id } });
-        if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
-
-        if (monitor.userId !== userId) {
-            const userTeams = await prisma.teamMember.findMany({
-                where: { userId },
-                select: { teamId: true }
-            });
-            const teamIds = userTeams.map(ut => ut.teamId);
-            const hasAccess = await prisma.monitorTeam.findFirst({
-                where: { monitorId: id, teamId: { in: teamIds } }
-            });
-            if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
-        }
-
         const logs = await prisma.monitorLog.findMany({
             where: { monitorId: id, lastCheckedAt: { gte: new Date(Date.now() - 3600000) } },
             orderBy: { lastCheckedAt: 'desc' }
         });
-        console.log(logs);
         res.json(logs);
     } catch (error) {
         logger.error('Error getting monitor logs:', error);
@@ -538,34 +567,15 @@ router.get('/:id/logs/hour', auth, async (req, res) => {
     }
 });
 
-// get monitor logs for last 24 hours
-router.get('/:id/logs/day', auth, async (req, res) => {
+// Get monitor logs for last 24 hours
+router.get('/:id/logs/day', auth, verifyMonitorAccess('READ'), async (req: AuthorizedRequest, res) => {
     try {
         const { id } = req.params;
-        const userId = (req as any).user.id;
         const twentyFourHoursAgo = new Date(Date.now() - 86400000).toISOString();
-
-        const monitor = await prisma.monitor.findUnique({ where: { id } });
-        if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
-
-        if (monitor.userId !== userId) {
-            const userTeams = await prisma.teamMember.findMany({
-                where: { userId },
-                select: { teamId: true }
-            });
-            const teamIds = userTeams.map(ut => ut.teamId);
-            const hasAccess = await prisma.monitorTeam.findFirst({
-                where: { monitorId: id, teamId: { in: teamIds } }
-            });
-            if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
-        }
-
         const logs = await prisma.monitorLog.findMany({
             where: { monitorId: id, lastCheckedAt: { gte: twentyFourHoursAgo } },
             orderBy: { lastCheckedAt: 'desc' }
         });
-
-        console.log('Logs:', logs);
         res.json(logs);
     } catch (error) {
         logger.error('Error getting monitor logs:', error);
@@ -573,35 +583,17 @@ router.get('/:id/logs/day', auth, async (req, res) => {
     }
 });
 
-
 // Get monitor stats (avg, p95, p99) for last 24h
-router.get('/:id/stats', auth, async (req, res) => {
+router.get('/:id/stats', auth, verifyMonitorAccess('READ'), async (req: AuthorizedRequest, res) => {
     try {
         const { id } = req.params;
-        const userId = (req as any).user.id;
         const twentyFourHoursAgo = new Date(Date.now() - 86400000);
 
-        const monitor = await prisma.monitor.findUnique({ where: { id } });
-        if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
-
-        if (monitor.userId !== userId) {
-            const userTeams = await prisma.teamMember.findMany({
-                where: { userId },
-                select: { teamId: true }
-            });
-            const teamIds = userTeams.map(ut => ut.teamId);
-            const hasAccess = await prisma.monitorTeam.findFirst({
-                where: { monitorId: id, teamId: { in: teamIds } }
-            });
-            if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
-        }
-
-        // Fetch only responseTime to minimize payload from DB
         const logs = await prisma.monitorLog.findMany({
             where: {
                 monitorId: id,
                 lastCheckedAt: { gte: twentyFourHoursAgo },
-                responseTime: { gt: 0 } // Only consider valid responses
+                responseTime: { gt: 0 }
             },
             select: { responseTime: true }
         });
@@ -633,30 +625,9 @@ router.get('/:id/stats', auth, async (req, res) => {
 });
 
 // Test email notification for monitor
-router.post('/:id/test-email', auth, async (req, res) => {
+router.post('/:id/test-email', auth, verifyMonitorAccess('READ'), async (req: AuthorizedRequest, res) => {
     try {
-        const { id } = req.params;
-        const userId = (req as any).user.id;
-
-        const monitor = await prisma.monitor.findUnique({
-            where: { id },
-            include: { notifier: true }
-        });
-
-        if (!monitor) return res.status(404).json({ error: 'Monitor not found' });
-
-        // Permission check
-        if (monitor.userId !== userId) {
-            const userTeams = await prisma.teamMember.findMany({
-                where: { userId },
-                select: { teamId: true }
-            });
-            const teamIds = userTeams.map(ut => ut.teamId);
-            const hasAccess = await prisma.monitorTeam.findFirst({
-                where: { monitorId: id, teamId: { in: teamIds } }
-            });
-            if (!hasAccess) return res.status(403).json({ error: 'Access denied' });
-        }
+        const monitor = req.monitor;
 
         if (!monitor.notifier) {
             return res.status(400).json({ error: 'No notification channel configured for this monitor' });
@@ -672,4 +643,3 @@ router.post('/:id/test-email', auth, async (req, res) => {
 });
 
 export default router;
-

@@ -1,5 +1,6 @@
 import express from 'express';
 import auth from '../middleware/auth.js';
+import { verifyIncidentAccess, AuthorizedRequest } from '../middleware/authorize.js';
 import { logger } from '../utils/logger.js';
 import prisma from '../lib/prisma.js';
 
@@ -47,7 +48,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Update message is required' });
     }
 
-    // Verify ownership
+    // Verify ownership of the status page
     const statusPage = await prisma.statusPage.findUnique({
       where: { id: statusPageId }
     });
@@ -86,9 +87,10 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Get a specific incident
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, verifyIncidentAccess(), async (req: AuthorizedRequest, res) => {
   try {
     const { id } = req.params;
+    // We already loaded the incident in verifyIncidentAccess, but we want the updates too.
     const incident = await prisma.incident.findUnique({
       where: { id },
       include: {
@@ -98,15 +100,6 @@ router.get('/:id', auth, async (req, res) => {
         }
       }
     });
-
-    if (!incident) {
-      return res.status(404).json({ error: 'Incident not found' });
-    }
-
-    if (incident.statusPage.userId !== (req as any).user.id) {
-      return res.status(403).json({ error: 'Unauthorized access to this incident' });
-    }
-
     res.json(incident);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch incident' });
@@ -114,23 +107,11 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Update incident (metadata or resolving)
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, verifyIncidentAccess(), async (req: AuthorizedRequest, res) => {
   try {
     const { id } = req.params;
     const { title, severity, status, postMortem, resolvedAt } = req.body;
-
-    const incident = await prisma.incident.findUnique({
-      where: { id },
-      include: { statusPage: true }
-    });
-
-    if (!incident) {
-      return res.status(404).json({ error: 'Incident not found' });
-    }
-
-    if (incident.statusPage.userId !== (req as any).user.id) {
-      return res.status(403).json({ error: 'Unauthorized access to this incident' });
-    }
+    const existingIncident = req.incident!;
 
     const updatedIncident = await prisma.incident.update({
       where: { id },
@@ -150,26 +131,14 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Post an update to an incident
-router.post('/:id/updates', auth, async (req, res) => {
+router.post('/:id/updates', auth, verifyIncidentAccess(), async (req: AuthorizedRequest, res) => {
   try {
     const { id } = req.params;
     const { message, status, severity } = req.body;
+    const incident = req.incident!;
 
     if (!message) {
       return res.status(400).json({ error: 'Update message is required' });
-    }
-
-    const incident = await prisma.incident.findUnique({
-      where: { id },
-      include: { statusPage: true }
-    });
-
-    if (!incident) {
-      return res.status(404).json({ error: 'Incident not found' });
-    }
-
-    if (incident.statusPage.userId !== (req as any).user.id) {
-      return res.status(403).json({ error: 'Unauthorized access to this incident' });
     }
 
     // Create update and update incident status/severity
@@ -199,22 +168,9 @@ router.post('/:id/updates', auth, async (req, res) => {
 });
 
 // Delete an incident
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, verifyIncidentAccess(), async (req: AuthorizedRequest, res) => {
   try {
     const { id } = req.params;
-    const incident = await prisma.incident.findUnique({
-      where: { id },
-      include: { statusPage: true }
-    });
-
-    if (!incident) {
-      return res.status(404).json({ error: 'Incident not found' });
-    }
-
-    if (incident.statusPage.userId !== (req as any).user.id) {
-      return res.status(403).json({ error: 'Unauthorized access to this incident' });
-    }
-
     await prisma.incident.delete({ where: { id } });
     res.json({ message: 'Incident deleted' });
   } catch (error) {

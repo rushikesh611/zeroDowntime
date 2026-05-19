@@ -84,5 +84,20 @@ The system strictly enforces limits based on the user's subscription tier:
 - Database queries use strict filters (e.g., `where: { id, userId }` or team membership lookups) to prevent unauthorized data access.
 
 ### C. Log Ingestion (Log Vault)
-- Protected by `X-API-Key` header.
 - API keys are unique per `LogSource` and hashed/indexed for performant validation.
+
+## 6. Testing Infrastructure
+
+The server codebase utilizes **Jest** and **Supertest** for comprehensive integration and unit testing. Tests are located in the `server/test/` directory.
+
+### Test Suites
+- **`auth.test.ts`**: Verifies JWT validation, user database lookup, and proper rejection of unauthorized requests.
+- **`monitors.test.ts`**: Tests the full CRUD lifecycle of monitors, subscription plan limit enforcement (regions, frequency), and strict ownership/RBAC checks.
+- **`statuspage.test.ts`**: Validates status page creation logic, ensuring it properly associates with monitors and respects free-tier limitations.
+- **`incidents.test.ts`**: Ensures incidents can only be created and updated by authorized team members, enforcing correct metadata constraints.
+- **`logSource.test.ts`**: Validates the creation of LogSources, verifying that API keys are properly SHA-256 hashed on creation and securely masked (`••••••••••••••••`) during retrieval.
+
+### Testing Standards
+- All tests use an in-memory or isolated Prisma environment to prevent data contamination.
+- Test suites must validate both positive paths and negative security constraints (e.g., attempting to access another user's monitor).
+- Mocks are used for external services (e.g., Resend, Stripe, AWS Lambda) to ensure tests run quickly and reliably without network dependencies.
