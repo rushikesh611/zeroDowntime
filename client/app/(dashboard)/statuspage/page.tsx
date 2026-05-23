@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { getFriendlyErrorMessage } from '@/lib/errors';
 import { Monitor } from '@/types';
 import { Plus, TowerControl, Radio } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
@@ -97,7 +98,9 @@ const StatusPage = () => {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to create status page');
+      if (!response.ok) {
+        throw { message: data.error || 'Failed to create status page', status: response.status };
+      }
 
       toast({
         title: 'Success',
@@ -122,7 +125,7 @@ const StatusPage = () => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message,
+        description: getFriendlyErrorMessage(error, 'Failed to create status page'),
       });
     } finally {
       setIsSubmitting(false);

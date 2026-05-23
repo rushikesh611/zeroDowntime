@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
+import { getFriendlyErrorMessage } from '@/lib/errors';
 import { 
   ShieldAlert, 
   MessageSquare, 
@@ -45,7 +46,10 @@ export default function IncidentsPage() {
   const fetchIncidents = async () => {
     try {
       const res = await fetch('/api/incidents');
-      if (!res.ok) throw new Error('Failed to load incidents');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw { message: data.error || 'Failed to load incidents', status: res.status };
+      }
       
       if (res.status === 204) {
         setIncidents([]);
@@ -55,7 +59,7 @@ export default function IncidentsPage() {
       const json = await res.json();
       setIncidents(json);
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Error', description: getFriendlyErrorMessage(err, 'Failed to load incidents') });
     } finally {
       setLoading(false);
     }

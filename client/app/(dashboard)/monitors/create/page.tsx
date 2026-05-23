@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from "@/hooks/use-toast"
 import { fetchWithAuth, parseTcpHost } from '@/lib/utils'
+import { getFriendlyErrorMessage } from '@/lib/errors'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IE, IN, US, DE, SG, BR, AU } from 'country-flag-icons/react/3x2'
 import { ArrowLeft, BellIcon, InfoIcon, PlusIcon, Trash2Icon, Globe, Settings2, ShieldCheck, Sparkles } from 'lucide-react'
@@ -167,12 +168,15 @@ const Page = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      if (!response.ok) throw new Error('Failed to create monitor')
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw { message: data.error || 'Failed to create monitor', status: response.status };
+      }
       const result = await response.json()
       toast({ title: 'Monitor created', description: 'Monitor created successfully' })
       router.push(`/monitors/${result.id}`)
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to create monitor', variant: 'destructive' })
+      toast({ title: 'Error', description: getFriendlyErrorMessage(error, 'Failed to create monitor'), variant: 'destructive' })
     }
   }
 
