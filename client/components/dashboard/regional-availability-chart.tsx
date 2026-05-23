@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MonitorLog } from "@/types";
 import { Activity, TrendingUp } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     CartesianGrid,
     Legend,
@@ -46,7 +46,7 @@ interface CustomTooltipProps extends TooltipProps<number, string> {
     label?: string;
 }
 
-const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ data = [] }) => {
+const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = React.memo(({ data = [] }) => {
     const timeRanges: TimeRanges = {
         "1h": "1H",
         "6h": "6H",
@@ -301,6 +301,6 @@ const RegionalAvailabilityChart: React.FC<RegionalAvailabilityChartProps> = ({ d
             </div>
         </div>
     );
-};
+});
 
 export default RegionalAvailabilityChart;

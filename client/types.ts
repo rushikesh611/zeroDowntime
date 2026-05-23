@@ -16,9 +16,12 @@ export interface Monitor {
     headers?: Record<string, string>;
     body?: string;
     assertions?: any[];
-    monitorType: "string";
+    monitorType: string;
     role?: "OWNER" | "READ" | "WRITE";
     ownerName?: string;
+    avgLatency?: number | null;
+    uptimeHistory?: { isUp: boolean; hasData: boolean }[];
+    sslDaysRemaining?: number | null;
 }
 
 

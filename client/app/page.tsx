@@ -6,40 +6,61 @@ import { useAppStore } from "@/store/useAppStore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  TowerControl
-} from "lucide-react"
+  TowerControl,
+  ArrowRight,
+  Gauge,
+  ShieldCheck,
+  Activity,
+  Server,
+  LineChart,
+  BellRing,
+  Globe,
+  Check,
+  Lock
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart as RechartsLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
+} from "recharts";
+
+const DUMMY_CHART_DATA = [
+  { time: "00:00", "us-east": 80, "eu-west": 120, "ap-south": 190 },
+  { time: "04:00", "us-east": 85, "eu-west": 115, "ap-south": 185 },
+  { time: "08:00", "us-east": 95, "eu-west": 130, "ap-south": 210 },
+  { time: "12:00", "us-east": 75, "eu-west": 110, "ap-south": 175 },
+  { time: "16:00", "us-east": 90, "eu-west": 140, "ap-south": 220 },
+  { time: "20:00", "us-east": 82, "eu-west": 125, "ap-south": 195 },
+  { time: "24:00", "us-east": 88, "eu-west": 118, "ap-south": 180 },
+];
 
 export default function Home() {
   const router = useRouter();
   const checkAuth = useAppStore((state) => state.checkAuth);
-  const isLoading = useAppStore((state) => state.isLoading);
   const user = useAppStore((state) => state.user);
   const [showSignIn, setShowSignIn] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    if (!isLoading && user) {
+    if (user) {
+      setShowSignIn(false);
       router.push("/monitors");
     }
-  }, [isLoading, user, router]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  }, [user, router]);
 
   return (
-    <main className="bg-background selection:bg-primary-container selection:text-on-primary-container min-h-screen">
+    <main className="bg-background selection:bg-primary-container selection:text-on-primary-container min-h-screen relative overflow-hidden">
+
+
       {/* TopAppBar */}
       <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="flex justify-between items-center px-6 py-3 max-w-7xl mx-auto">
@@ -48,10 +69,9 @@ export default function Home() {
             <span className="text-lg font-bold text-foreground tracking-tight">Beacn</span>
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm">
-            <a href="#" className="text-foreground font-medium">Product</a>
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-            <a href="#global" className="text-muted-foreground hover:text-foreground transition-colors">Coverage</a>
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors font-medium">Product</a>
+            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors font-medium">Pricing</a>
+            <a href="#global" className="text-muted-foreground hover:text-foreground transition-colors font-medium">Coverage</a>
           </div>
           <button
             onClick={() => setShowSignIn(true)}
@@ -63,59 +83,196 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-16 px-6">
-        <div className="max-w-5xl mx-auto flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-xs font-semibold mb-6">
+      <section className="pt-32 pb-16 px-6 relative z-10 text-center">
+        <div className="max-w-5xl mx-auto flex flex-col items-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-xs font-semibold mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-secondary"></span>
             </span>
             Live: Global DNS Monitoring
           </div>
-          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground max-w-3xl leading-tight mb-6">
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground max-w-3xl leading-tight mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150 fill-mode-both">
             Synthetic Monitoring That <span className="text-primary">Never Sleeps</span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mb-10 leading-relaxed">
-            Monitor your APIs, websites, SSL certificates, and DNS from locations worldwide. Get instant alerts before your users do.
+          <p className="text-lg text-muted-foreground max-w-2xl mb-10 leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300 fill-mode-both">
+            Monitor your APIs, websites, SSL certificates, and DNS from 15+ locations worldwide. Get instant alerts, because your users make terrible monitoring agents.
           </p>
-          <div className="flex gap-4 mb-16">
+          <div className="flex gap-4 mb-16 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500 fill-mode-both">
             <button
               onClick={() => setShowSignIn(true)}
-              className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors"
+              className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 hover:bg-primary/90 transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
-              Start Monitoring <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              Start Monitoring <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Dashboard Preview */}
-          <div className="w-full relative group mx-auto text-left">
-            <div className="bg-card rounded-xl border shadow-sm p-4 md:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-4 space-y-4">
-                  <div className="p-4 rounded-lg bg-muted/30 border text-left">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Overall Status</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                      <span className="text-lg font-semibold text-foreground">Operational</span>
+          {/* Premium Notion-Like Dashboard Mockup */}
+          <div className="w-full max-w-4xl border border-border bg-card rounded-lg shadow-none overflow-x-auto text-left animate-in fade-in zoom-in-95 duration-1000 delay-700 fill-mode-both">
+            <div className="min-w-[760px]">
+              {/* Header bar */}
+              <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/20">
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">My Monitors</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-semibold border border-emerald-500/20">All Active</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-7 px-2 border rounded-md text-[10px] text-muted-foreground flex items-center bg-background w-48">
+                    Search monitors...
+                  </div>
+                  <button className="h-7 px-2.5 bg-primary text-primary-foreground text-[10px] font-medium rounded-md hover:bg-primary/90 transition-colors">
+                    + Add Monitor
+                  </button>
+                </div>
+              </div>
+
+              {/* List Body */}
+              <div className="divide-y text-xs">
+                {/* Row 1 */}
+                <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3 w-1/4">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div>
+                      <p className="font-semibold text-foreground">API Gateway</p>
+                      <p className="text-[10px] text-muted-foreground truncate">https://api.beacn.com/v1</p>
                     </div>
                   </div>
-                  <div className="p-4 rounded-lg bg-muted/30 border text-left">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Uptime (24h)</p>
-                    <span className="text-2xl font-bold text-primary tracking-tight">99.998%</span>
+                  <div className="w-20">
+                    <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium border text-muted-foreground uppercase">HTTPS</span>
+                  </div>
+                  <div className="flex flex-col gap-1 w-44">
+                    <div className="flex justify-between text-[9px] text-muted-foreground px-0.5">
+                      <span>Uptime history (30d)</span>
+                      <span className="text-foreground font-semibold">99.98%</span>
+                    </div>
+                    <div className="flex gap-[2px]">
+                      {Array.from({ length: 30 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-4 flex-grow rounded-sm ${i === 24 ? "bg-amber-500" : "bg-emerald-500"}`}
+                          title={i === 24 ? "Brief outage (42s)" : "Operational"}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-24 text-right">
+                    <p className="text-muted-foreground text-[10px]">Avg Latency</p>
+                    <p className="font-semibold text-foreground tabular-nums">42ms</p>
+                  </div>
+                  <div className="w-24 text-right">
+                    <p className="text-muted-foreground text-[10px]">SSL Certificate</p>
+                    <p className="font-semibold text-emerald-600 tabular-nums">29 days left</p>
                   </div>
                 </div>
-                <div className="md:col-span-8 bg-muted/30 border rounded-lg p-5 relative min-h-[250px] flex flex-col justify-between">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-sm font-semibold text-foreground">Response Time (ms)</h3>
-                    <div className="flex gap-2">
-                      <span className="px-2 py-0.5 rounded border bg-background text-[10px] font-medium text-foreground">Global Avg</span>
-                      <span className="px-2 py-0.5 rounded border border-primary/20 bg-primary/5 text-primary text-[10px] font-medium">Beacn Optimized</span>
+
+                {/* Row 2 */}
+                <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3 w-1/4">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div>
+                      <p className="font-semibold text-foreground">Marketing Landing</p>
+                      <p className="text-[10px] text-muted-foreground truncate">https://beacn.com</p>
                     </div>
                   </div>
-                  <div className="h-40 flex items-end gap-1.5 px-2">
-                    {[40, 60, 35, 80, 75, 95, 50, 20].map((h, i) => (
-                      <div key={i} className="w-full bg-primary/20 rounded-t hover:bg-primary/40 transition-colors" style={{ height: `${h}%` }}></div>
-                    ))}
+                  <div className="w-20">
+                    <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium border text-muted-foreground uppercase">HTTPS</span>
+                  </div>
+                  <div className="flex flex-col gap-1 w-44">
+                    <div className="flex justify-between text-[9px] text-muted-foreground px-0.5">
+                      <span>Uptime history (30d)</span>
+                      <span className="text-foreground font-semibold">100.0%</span>
+                    </div>
+                    <div className="flex gap-[2px]">
+                      {Array.from({ length: 30 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="h-4 flex-grow rounded-sm bg-emerald-500"
+                          title="Operational"
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-24 text-right">
+                    <p className="text-muted-foreground text-[10px]">Avg Latency</p>
+                    <p className="font-semibold text-foreground tabular-nums">85ms</p>
+                  </div>
+                  <div className="w-24 text-right">
+                    <p className="text-muted-foreground text-[10px]">SSL Certificate</p>
+                    <p className="font-semibold text-emerald-600 tabular-nums">118 days left</p>
+                  </div>
+                </div>
+
+                {/* Row 3 */}
+                <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3 w-1/4">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div>
+                      <p className="font-semibold text-foreground">Database Primary</p>
+                      <p className="text-[10px] text-muted-foreground truncate">db-primary.beacn.com:5432</p>
+                    </div>
+                  </div>
+                  <div className="w-20">
+                    <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium border text-muted-foreground uppercase">TCP</span>
+                  </div>
+                  <div className="flex flex-col gap-1 w-44">
+                    <div className="flex justify-between text-[9px] text-muted-foreground px-0.5">
+                      <span>Uptime history (30d)</span>
+                      <span className="text-foreground font-semibold">99.99%</span>
+                    </div>
+                    <div className="flex gap-[2px]">
+                      {Array.from({ length: 30 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="h-4 flex-grow rounded-sm bg-emerald-500"
+                          title="Operational"
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-24 text-right">
+                    <p className="text-muted-foreground text-[10px]">Avg Latency</p>
+                    <p className="font-semibold text-foreground tabular-nums">8ms</p>
+                  </div>
+                  <div className="w-24 text-right">
+                    <p className="text-muted-foreground text-[10px]">SSL Certificate</p>
+                    <p className="font-semibold text-muted-foreground tabular-nums">N/A</p>
+                  </div>
+                </div>
+
+                {/* Row 4 */}
+                <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3 w-1/4">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div>
+                      <p className="font-semibold text-foreground">DNS Resolution</p>
+                      <p className="text-[10px] text-muted-foreground truncate">dns.google (8.8.8.8)</p>
+                    </div>
+                  </div>
+                  <div className="w-20">
+                    <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium border text-muted-foreground uppercase">DNS</span>
+                  </div>
+                  <div className="flex flex-col gap-1 w-44">
+                    <div className="flex justify-between text-[9px] text-muted-foreground px-0.5">
+                      <span>Uptime history (30d)</span>
+                      <span className="text-foreground font-semibold">100.0%</span>
+                    </div>
+                    <div className="flex gap-[2px]">
+                      {Array.from({ length: 30 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="h-4 flex-grow rounded-sm bg-emerald-500"
+                          title="Operational"
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-24 text-right">
+                    <p className="text-muted-foreground text-[10px]">Avg Latency</p>
+                    <p className="font-semibold text-foreground tabular-nums">15ms</p>
+                  </div>
+                  <div className="w-24 text-right">
+                    <p className="text-muted-foreground text-[10px]">SSL Certificate</p>
+                    <p className="font-semibold text-muted-foreground tabular-nums">N/A</p>
                   </div>
                 </div>
               </div>
@@ -128,21 +285,21 @@ export default function Home() {
       <div className="border-y bg-muted/10 py-10 px-6">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
           <div className="flex flex-col items-center md:items-start gap-3 p-4">
-            <span className="material-symbols-outlined text-2xl text-secondary">speed</span>
+            <Gauge className="w-8 h-8 text-secondary" />
             <div>
               <h4 className="font-semibold text-sm text-foreground mb-1">Sub-second response</h4>
               <p className="text-muted-foreground text-xs">Ultra-fast check intervals up to every 30 seconds.</p>
             </div>
           </div>
           <div className="flex flex-col items-center md:items-start gap-3 p-4">
-            <span className="material-symbols-outlined text-2xl text-primary">verified_user</span>
+            <ShieldCheck className="w-8 h-8 text-primary" />
             <div>
               <h4 className="font-semibold text-sm text-foreground mb-1">99.99% uptime SLA</h4>
               <p className="text-muted-foreground text-xs">Our infrastructure is as reliable as yours needs to be.</p>
             </div>
           </div>
           <div className="flex flex-col items-center md:items-start gap-3 p-4">
-            <span className="material-symbols-outlined text-2xl text-emerald-600">monitoring</span>
+            <Activity className="w-8 h-8 text-emerald-600" />
             <div>
               <h4 className="font-semibold text-sm text-foreground mb-1">24/7 monitoring</h4>
               <p className="text-muted-foreground text-xs">Automated probes running every second of every day.</p>
@@ -160,41 +317,41 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 auto-rows-[200px]">
             {/* Feature 1 */}
-            <div className="md:col-span-8 bg-card border rounded-xl p-6 flex flex-col justify-between overflow-hidden relative">
-              <div className="relative z-10">
+            <div className="md:col-span-8 bg-card border rounded-xl p-6 flex flex-col justify-between overflow-hidden relative hover:bg-muted/30 transition-all hover:-translate-y-1">
+              <div>
                 <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-primary text-sm">dns</span>
+                  <Server className="w-4 h-4 text-primary" />
                 </div>
                 <h3 className="text-base font-semibold mb-1">Monitoring Types</h3>
                 <p className="text-muted-foreground max-w-md text-xs leading-relaxed">Check HTTP/S, TCP, UDP, DNS, and ICMP Ping. Monitor SSL certificate expiration and health automatically.</p>
               </div>
-              <div className="flex gap-2 relative z-10 mt-4">
+              <div className="flex gap-2 mt-4">
                 <span className="px-2 py-0.5 border rounded text-[10px] font-semibold text-foreground">SSL</span>
                 <span className="px-2 py-0.5 border rounded text-[10px] font-semibold text-foreground">TCP</span>
                 <span className="px-2 py-0.5 border rounded text-[10px] font-semibold text-foreground">HTTP</span>
               </div>
             </div>
             {/* Feature 2 */}
-            <div className="md:col-span-4 bg-card border rounded-xl p-6 flex flex-col hover:bg-muted/30 transition-colors">
+            <div className="md:col-span-4 bg-card border rounded-xl p-6 flex flex-col hover:bg-muted/30 transition-all hover:-translate-y-1">
               <div className="w-8 h-8 bg-secondary/10 rounded flex items-center justify-center mb-4">
-                <span className="material-symbols-outlined text-secondary text-sm">show_chart</span>
+                <LineChart className="w-4 h-4 text-secondary" />
               </div>
               <h3 className="text-base font-semibold mb-1">Real-time Charts</h3>
               <p className="text-muted-foreground text-xs leading-relaxed">Visualize latency spikes and error rates with high-resolution granular data points.</p>
             </div>
             {/* Feature 3 */}
-            <div className="md:col-span-4 bg-card border rounded-xl p-6 flex flex-col hover:bg-muted/30 transition-colors">
+            <div className="md:col-span-4 bg-card border rounded-xl p-6 flex flex-col hover:bg-muted/30 transition-all hover:-translate-y-1">
               <div className="w-8 h-8 bg-emerald-600/10 rounded flex items-center justify-center mb-4">
-                <span className="material-symbols-outlined text-emerald-600 text-sm">notifications_active</span>
+                <BellRing className="w-4 h-4 text-emerald-600" />
               </div>
               <h3 className="text-base font-semibold mb-1">Alerting Channels</h3>
               <p className="text-muted-foreground text-xs leading-relaxed">Slack, Webhooks, and Email. Notify the right people instantly when issues arise.</p>
             </div>
             {/* Feature 4 */}
-            <div className="md:col-span-8 bg-card border rounded-xl p-6 flex flex-col justify-between overflow-hidden relative">
-              <div className="relative z-10">
+            <div className="md:col-span-8 bg-card border rounded-xl p-6 flex flex-col justify-between overflow-hidden relative hover:bg-muted/30 transition-all hover:-translate-y-1">
+              <div>
                 <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-primary text-sm">public</span>
+                  <Globe className="w-4 h-4 text-primary" />
                 </div>
                 <h3 className="text-base font-semibold mb-1">Status Pages</h3>
                 <p className="text-muted-foreground max-w-md text-xs leading-relaxed">Share system health with your customers using beautiful, branded status pages that reflect your reliability.</p>
@@ -266,19 +423,19 @@ export default function Home() {
             </div>
             <ul className="space-y-3 mb-8 flex-grow">
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 1 Monitor limit
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 15-minute frequency
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 Max 3 regions
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 Email notifications
               </li>
             </ul>
@@ -297,23 +454,23 @@ export default function Home() {
             </div>
             <ul className="space-y-3 mb-8 flex-grow">
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 15 Monitors limit
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 1-minute frequency
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 Max 5 regions
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 1 Team (up to 20 users)
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 Role-based access
               </li>
             </ul>
@@ -329,23 +486,23 @@ export default function Home() {
             </div>
             <ul className="space-y-3 mb-8 flex-grow">
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 50 Monitors limit
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 30-second frequency
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 All regions available
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 1 Team (up to 50 users)
               </li>
               <li className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="material-symbols-outlined text-primary text-sm">check</span>
+                <Check className="w-4 h-4 text-primary" />
                 Priority support
               </li>
             </ul>
@@ -371,28 +528,27 @@ export default function Home() {
             <ul className="space-y-3">
               <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#features">Features</a></li>
               <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#pricing">Pricing</a></li>
-              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#">API Reference</a></li>
+              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="/api-reference">API Reference</a></li>
             </ul>
           </div>
           <div>
             <h5 className="font-semibold text-xs uppercase tracking-widest text-foreground mb-4">Company</h5>
             <ul className="space-y-3">
-              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#">About Us</a></li>
-              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#">Security</a></li>
-              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#">Privacy</a></li>
+              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="/about">About Us</a></li>
+              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="mailto:support@beacn.com">Contact Us</a></li>
+              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="/privacy">Privacy Policy</a></li>
             </ul>
           </div>
           <div>
             <h5 className="font-semibold text-xs uppercase tracking-widest text-foreground mb-4">Support</h5>
             <ul className="space-y-3">
-              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#">Help Center</a></li>
-              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#">Status</a></li>
-              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="#">Terms</a></li>
+              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="https://status.beacn.com" target="_blank" rel="noopener noreferrer">System Status</a></li>
+              <li><a className="text-xs text-muted-foreground hover:text-foreground transition-colors" href="/terms">Terms of Service</a></li>
             </ul>
           </div>
         </div>
         <div className="max-w-5xl mx-auto px-8 py-6 border-t text-center md:text-left">
-          <p className="text-[10px] text-muted-foreground">© 2024 Beacn Monitoring. All rights reserved.</p>
+          <p className="text-[10px] text-muted-foreground">© 2026 Beacn Monitoring. All rights reserved.</p>
         </div>
       </footer>
 
@@ -401,7 +557,7 @@ export default function Home() {
         <DialogContent className="sm:max-w-md bg-card border shadow-sm rounded-xl p-6">
           <DialogHeader className="mb-2">
             <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-3 mx-auto border border-primary/20">
-              <span className="material-symbols-outlined text-primary text-[24px]">lock</span>
+              <Lock className="w-6 h-6 text-primary" />
             </div>
             <DialogTitle className="text-lg font-semibold text-center text-foreground">Welcome to Beacn</DialogTitle>
             <DialogDescription className="text-center text-muted-foreground font-medium text-xs leading-relaxed mx-auto max-w-sm pt-1">

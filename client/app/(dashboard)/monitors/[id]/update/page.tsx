@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
 import { fetchWithAuth, parseTcpHost } from "@/lib/utils"
+import { getFriendlyErrorMessage } from "@/lib/errors"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { IE, IN, US, DE, SG, BR, AU } from 'country-flag-icons/react/3x2'
 import { ArrowLeft, BellIcon, InfoIcon, PlusIcon, Trash2Icon, Globe, Settings2, ShieldCheck, Mail } from "lucide-react"
@@ -43,12 +44,15 @@ const headerSchema = z.object({
 
 const formSchema = z.object({
     name: z.string().optional(),
-    monitorType: z.enum(['http', 'tcp']),
+    monitorType: z.enum(['http', 'tcp', 'dns', 'ssl', 'ping', 'graphql']),
     url: z.string().optional(),
     method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']),
     headers: z.array(headerSchema),
     assertions: z.array(assertionSchema),
     tcpHost: z.string().optional(),
+    dnsRecordType: z.enum(['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS']).optional(),
+    expectedIp: z.string().optional(),
+    query: z.string().optional(),
     notifierId: z.string().min(1, 'Notification channel is required'),
     frequency: z.coerce.number().min(1, 'Frequency is required'),
     regions: z.array(z.string()).min(1, 'At least one region is required')
@@ -61,11 +65,22 @@ const formSchema = z.object({
                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid URL", path: ["url"] });
             }
         }
-    } else if (data.monitorType === 'tcp') {
+    } else if (data.monitorType === 'graphql') {
+        if (!data.url) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "URL is required", path: ["url"] });
+        } else {
+            try { z.string().url().parse(data.url); } catch {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid URL", path: ["url"] });
+            }
+        }
+        if (!data.query) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "GraphQL Query is required", path: ["query"] });
+    } else if (['tcp', 'ssl', 'ping', 'dns'].includes(data.monitorType)) {
         if (!data.tcpHost) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "TCP Host is required", path: ["tcpHost"] });
-        } else if (!/^(.*):(\d+)$/.test(data.tcpHost)) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid TCP Host format. Expected host:port", path: ["tcpHost"] });
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Target host is required", path: ["tcpHost"] });
+        } else if (data.monitorType === 'tcp' || data.monitorType === 'ssl') {
+            if (!/^(.*):(\d+)$/.test(data.tcpHost) && data.monitorType === 'tcp') {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid TCP Host format. Expected host:port", path: ["tcpHost"] });
+            }
         }
     }
 });
@@ -87,6 +102,9 @@ const UpdateMonitorPage = () => {
             method: 'GET',
             url: '',
             tcpHost: '',
+            dnsRecordType: 'A',
+            expectedIp: '',
+            query: '',
             notifierId: '',
             regions: [],
             headers: [],
@@ -118,7 +136,11 @@ const UpdateMonitorPage = () => {
                 const type = data.monitorType || data.type || 'http';
                 setInitialMonitorType(type)
                 let tcpHost = '';
-                if (type === 'tcp') tcpHost = `${data.host}:${data.port}`;
+                if (type === 'tcp' || type === 'ssl') {
+                    tcpHost = data.host && data.port ? `${data.host}:${data.port}` : data.host || '';
+                } else if (type === 'dns' || type === 'ping') {
+                    tcpHost = data.host || '';
+                }
 
                 let assertions: any[] = [];
                 if (data.assertions && Array.isArray(data.assertions)) {
@@ -139,6 +161,9 @@ const UpdateMonitorPage = () => {
                     method: data.method || 'GET',
                     url: data.url || '',
                     tcpHost,
+                    dnsRecordType: data.dnsRecordType || 'A',
+                    expectedIp: data.expectedIp || '',
+                    query: data.query || '',
                     notifierId: data.notifierId || '',
                     regions: data.regions || [],
                     headers: headers,
@@ -156,10 +181,17 @@ const UpdateMonitorPage = () => {
     }, [id])
 
     const onSubmit = async (data: FormValues) => {
-        const payload = {
+        let payload: any = {
             name: data.name,
             monitorType: data.monitorType,
-            ...(data.monitorType === 'http' ? {
+            notifierId: data.notifierId,
+            frequency: data.frequency,
+            regions: data.regions
+        };
+
+        if (data.monitorType === 'http') {
+            payload = {
+                ...payload,
                 method: data.method,
                 url: data.url,
                 headers: data.headers.filter(h => h.key && h.value).reduce((acc, h) => {
@@ -168,13 +200,40 @@ const UpdateMonitorPage = () => {
                 }, {} as Record<string, string>),
                 body: null,
                 assertions: data.assertions,
-            } : {
-                host: parseTcpHost(data.tcpHost!).host,
-                port: parseTcpHost(data.tcpHost!).port
-            }),
-            notifierId: data.notifierId,
-            frequency: data.frequency,
-            regions: data.regions
+            };
+        } else if (data.monitorType === 'graphql') {
+            payload = {
+                ...payload,
+                url: data.url,
+                headers: data.headers.filter(h => h.key && h.value).reduce((acc, h) => {
+                    acc[h.key] = h.value;
+                    return acc;
+                }, {} as Record<string, string>),
+                query: data.query,
+                assertions: data.assertions,
+            };
+        } else if (data.monitorType === 'tcp' || data.monitorType === 'ssl') {
+            const parsed = parseTcpHost(data.tcpHost!);
+            payload = {
+                ...payload,
+                host: parsed.host,
+                port: parsed.port || (data.monitorType === 'ssl' ? 443 : 80),
+                assertions: data.assertions
+            };
+        } else if (data.monitorType === 'dns') {
+            payload = {
+                ...payload,
+                host: data.tcpHost,
+                dnsRecordType: data.dnsRecordType || 'A',
+                expectedIp: data.expectedIp,
+                assertions: data.assertions
+            };
+        } else if (data.monitorType === 'ping') {
+            payload = {
+                ...payload,
+                host: data.tcpHost,
+                assertions: data.assertions
+            };
         }
 
         try {
@@ -183,11 +242,14 @@ const UpdateMonitorPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            if (!response.ok) throw new Error('Failed to update monitor')
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw { message: data.error || 'Failed to update monitor', status: response.status };
+            }
             toast({ title: 'Success', description: `Monitor updated successfully` })
             router.push(`/monitors/${id}`)
         } catch (error) {
-            toast({ title: 'Error', description: 'Failed to update monitor', variant: 'destructive' })
+            toast({ title: 'Error', description: getFriendlyErrorMessage(error, 'Failed to update monitor'), variant: 'destructive' })
         }
     }
 
@@ -214,7 +276,8 @@ const UpdateMonitorPage = () => {
 
     const isFormReady = (() => {
         if (monitorType === 'http' && !watchedUrl) return false;
-        if (monitorType === 'tcp' && !watchedTcpHost) return false;
+        if (monitorType === 'graphql' && (!watchedUrl || !form.watch('query'))) return false;
+        if (['tcp', 'ssl', 'ping', 'dns'].includes(monitorType) && !watchedTcpHost) return false;
         if (!watchedNotifierId) return false;
         if (!watchedFrequency || watchedFrequency < 1) return false;
         if (!watchedRegions || watchedRegions.length === 0) return false;
@@ -272,24 +335,39 @@ const UpdateMonitorPage = () => {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel className="text-xs font-semibold">Monitor Type</FormLabel>
-                                            <div className="grid grid-cols-2 gap-2 mt-1.5">
-                                                {(['http', 'tcp'] as const).map((type) => (
-                                                    <Button
-                                                        key={type}
-                                                        type="button"
-                                                        variant={field.value === type ? "default" : "outline"}
-                                                        className="h-10 justify-start px-3 rounded-md"
-                                                        disabled={(type === 'http' && initialMonitorType === 'tcp') || (type === 'tcp' && initialMonitorType === 'http')}
-                                                        onClick={() => field.onChange(type)}
-                                                    >
-                                                        <div className="flex flex-col items-start text-left">
-                                                            <span className="text-xs font-bold uppercase">{type}</span>
-                                                            <span className="text-[10px] font-normal opacity-70">
-                                                                {type === 'http' ? 'Web endpoints' : 'TCP connections'}
-                                                            </span>
-                                                        </div>
-                                                    </Button>
-                                                ))}
+                                            <div className="grid grid-cols-3 gap-2 mt-1.5">
+                                                {[
+                                                    { id: 'http', label: 'HTTP/HTTPS', desc: 'Web endpoints', group: 'web' },
+                                                    { id: 'tcp', label: 'TCP Port', desc: 'Port checks', group: 'host' },
+                                                    { id: 'dns', label: 'DNS Query', desc: 'Resolutions', group: 'host' },
+                                                    { id: 'ping', label: 'Ping / ICMP', desc: 'Host reach', group: 'host' },
+                                                    { id: 'graphql', label: 'GraphQL', desc: 'API queries', group: 'web' }
+                                                ].map((type) => {
+                                                    const initialGroup = ['http', 'graphql'].includes(initialMonitorType || '') ? 'web' : 'host';
+                                                    const isDisabled = type.group !== initialGroup;
+                                                    return (
+                                                        <Button
+                                                            key={type.id}
+                                                            type="button"
+                                                            variant={field.value === type.id ? "default" : "outline"}
+                                                            className="h-12 justify-start px-3 rounded-md"
+                                                            disabled={isDisabled}
+                                                            onClick={() => {
+                                                                field.onChange(type.id);
+                                                                if (type.id === 'dns' && !form.getValues('dnsRecordType')) {
+                                                                    form.setValue('dnsRecordType', 'A');
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className="flex flex-col items-start text-left">
+                                                                <span className="text-xs font-bold uppercase">{type.label}</span>
+                                                                <span className="text-[9px] font-normal opacity-70 leading-none mt-0.5">
+                                                                    {type.desc}
+                                                                </span>
+                                                            </div>
+                                                        </Button>
+                                                    );
+                                                })}
                                             </div>
                                             <FormMessage />
                                         </FormItem>
@@ -307,42 +385,68 @@ const UpdateMonitorPage = () => {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {monitorType === 'http' ? (
-                                    <div className="grid grid-cols-4 gap-2">
-                                        <FormField
-                                            control={form.control}
-                                            name="method"
-                                            render={({ field }) => (
-                                                <FormItem className="col-span-1">
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                {(monitorType === 'http' || monitorType === 'graphql') && (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {monitorType === 'http' && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="method"
+                                                    render={({ field }) => (
+                                                        <FormItem className="col-span-1">
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger className="h-9 text-xs font-bold">
+                                                                        <SelectValue />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'].map((method) => (
+                                                                        <SelectItem key={method} value={method} className="text-xs">{method}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )}
+                                            <FormField
+                                                control={form.control}
+                                                name="url"
+                                                render={({ field }) => (
+                                                    <FormItem className={monitorType === 'http' ? "col-span-3" : "col-span-4"}>
                                                         <FormControl>
-                                                            <SelectTrigger className="h-9 text-xs font-bold">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
+                                                            <Input placeholder="https://api.example.com" className="h-9 text-sm" {...field} />
                                                         </FormControl>
-                                                        <SelectContent>
-                                                            {['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'].map((method) => (
-                                                                <SelectItem key={method} value={method} className="text-xs">{method}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="url"
-                                            render={({ field }) => (
-                                                <FormItem className="col-span-3">
-                                                    <FormControl>
-                                                        <Input placeholder="https://api.example.com" className="h-9 text-sm" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+
+                                        {monitorType === 'graphql' && (
+                                            <FormField
+                                                control={form.control}
+                                                name="query"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs font-semibold">GraphQL Query</FormLabel>
+                                                        <FormControl>
+                                                            <textarea
+                                                                placeholder="query { hello }"
+                                                                className="w-full min-h-[100px] p-3 text-xs font-mono border rounded-md bg-muted/20 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
                                     </div>
-                                ) : (
+                                )}
+
+                                {monitorType === 'tcp' && (
                                     <FormField
                                         control={form.control}
                                         name="tcpHost"
@@ -359,11 +463,105 @@ const UpdateMonitorPage = () => {
                                         )}
                                     />
                                 )}
+
+                                {monitorType === 'ssl' && (
+                                    <FormField
+                                        control={form.control}
+                                        name="tcpHost"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs font-semibold">Host / Domain</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="example.com:443" className="h-9 text-sm" {...field} />
+                                                </FormControl>
+                                                <FormDescription className="text-[10px]">
+                                                    E.g. example.com:443 or example.com (defaults to port 443)
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+
+                                {monitorType === 'ping' && (
+                                    <FormField
+                                        control={form.control}
+                                        name="tcpHost"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs font-semibold">Ping Destination</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="example.com" className="h-9 text-sm" {...field} />
+                                                </FormControl>
+                                                <FormDescription className="text-[10px]">
+                                                    Domain name or IP address to ping
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+
+                                {monitorType === 'dns' && (
+                                    <div className="space-y-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="tcpHost"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs font-semibold">Domain to Resolve</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="example.com" className="h-9 text-sm" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="dnsRecordType"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs font-semibold">Record Type</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value || 'A'}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="h-9 text-sm">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS'].map((record) => (
+                                                                    <SelectItem key={record} value={record} className="text-xs">{record}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="expectedIp"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs font-semibold">Expected Value (Optional)</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="e.g. 1.1.1.1" className="h-9 text-sm" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
-                        {/* HTTP Advanced Settings */}
-                        {monitorType === 'http' && (
+                        {/* HTTP/GraphQL Advanced Settings */}
+                        {(monitorType === 'http' || monitorType === 'graphql') && (
                             <Card className="shadow-none border bg-card">
                                 <CardHeader className="pb-4 border-b">
                                     <CardTitle className="text-sm font-semibold">Advanced Checks</CardTitle>

@@ -40,11 +40,14 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
 };
 
 
-export function parseTcpHost(input: string): { host: string; port: number } {
+export function parseTcpHost(input: string): { host: string; port?: number } {
   const match = input.match(/^(.*):(\d+)$/);
 
   if (!match) {
-    throw new Error(`Invalid host:port format: ${input}`);
+    return {
+      host: input,
+      port: undefined
+    };
   }
 
   return {

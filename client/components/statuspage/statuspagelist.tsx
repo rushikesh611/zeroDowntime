@@ -79,22 +79,26 @@ const StatusPageList = () => {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2">
         {[1, 2].map((i) => (
-          <Card key={i} className="animate-pulse shadow-none border">
-            <CardHeader className="pb-4">
-              <div className="h-10 w-10 bg-muted rounded mb-4"></div>
-              <div className="h-6 bg-muted rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-            </CardHeader>
-            <CardContent className="pb-4">
-              <div className="h-4 bg-muted rounded w-full mb-2"></div>
-              <div className="h-4 bg-muted rounded w-2/3"></div>
-            </CardContent>
-            <CardFooter className="pt-4 border-t bg-muted/5">
-              <div className="h-9 bg-muted rounded w-full"></div>
-            </CardFooter>
-          </Card>
+          <div key={i} className="animate-pulse border border-border bg-card rounded-lg overflow-hidden flex flex-col h-[200px]">
+            <div className="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-8 w-8 bg-muted rounded"></div>
+                  <div className="h-5 w-20 bg-muted rounded-md"></div>
+                </div>
+                <div className="h-5 bg-muted rounded w-1/2 mb-2"></div>
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+              </div>
+              <div className="h-4 bg-muted rounded w-full mt-4"></div>
+            </div>
+            <div className="p-4 border-t bg-muted/10 h-16 flex gap-2">
+              <div className="h-8 bg-muted rounded flex-grow"></div>
+              <div className="h-8 bg-muted rounded flex-grow"></div>
+              <div className="h-8 w-8 bg-muted rounded"></div>
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -102,11 +106,11 @@ const StatusPageList = () => {
 
   if (statusPages.length === 0) {
     return (
-      <div className="text-center p-20 border border-dashed rounded-3xl bg-muted/5">
+      <div className="text-center p-20 border border-dashed rounded-lg bg-card max-w-lg mx-auto">
         <Radio className="h-10 w-10 mx-auto mb-4 text-muted-foreground/30" />
-        <h3 className="text-base font-bold">No status pages yet</h3>
-        <p className="text-xs text-muted-foreground mb-6 max-w-[250px] mx-auto leading-relaxed">
-          Create a public page to communicate service status and uptime history to your users.
+        <h3 className="text-base font-bold text-foreground">No status pages yet</h3>
+        <p className="text-xs text-muted-foreground mb-6 max-w-[320px] mx-auto leading-relaxed">
+          Create a public status page to communicate service status, performance metrics, and real-time incident reports to your customers.
         </p>
       </div>
     );
@@ -115,55 +119,57 @@ const StatusPageList = () => {
   return (
     <div className="grid gap-6 sm:grid-cols-2">
       {statusPages.map((page) => (
-        <Card key={page.id} className="shadow-none border group hover:border-primary/30 transition-all overflow-hidden flex flex-col bg-card/50">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="size-9 rounded bg-primary/5 flex items-center justify-center text-primary border border-primary/10">
-                <Radio className="size-4" />
+        <div key={page.id} className="border border-border bg-card rounded-lg overflow-hidden flex flex-col hover:border-border/80 transition-colors">
+          <div className="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="size-8 rounded bg-muted flex items-center justify-center text-muted-foreground border">
+                  <Radio className="size-4" />
+                </div>
+                <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider px-2 h-5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-md">
+                  {page.monitors.length} {page.monitors.length === 1 ? 'Monitor' : 'Monitors'}
+                </Badge>
               </div>
-              <Badge variant="secondary" className="text-[9px] uppercase font-black tracking-widest px-2 h-5 bg-emerald-500/10 text-emerald-600 border-transparent">
-                {page.monitors.length} {page.monitors.length === 1 ? 'Monitor' : 'Monitors'}
-              </Badge>
+              <h3 className="text-md font-semibold text-foreground">{page.title}</h3>
+              <p className="text-[10px] font-mono truncate bg-muted/40 px-2 py-1 rounded border border-border/40 mt-3 text-muted-foreground select-all w-fit">
+                {page.subdomain}.{domain}
+              </p>
             </div>
-            <CardTitle className="text-lg font-bold">{page.title}</CardTitle>
-            <CardDescription className="text-[10px] font-bold font-mono truncate bg-muted/50 p-1.5 rounded mt-2 uppercase tracking-widest text-muted-foreground">
-              {page.subdomain}.{domain}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pb-4 flex-1">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest opacity-60">
+            
+            <div className="space-y-2 mt-4 pt-4 border-t border-border/40">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
                 <span className="text-muted-foreground flex items-center gap-1.5"><Activity className="size-3" /> Status</span>
-                <span className={page.monitors.every(m => m.status === 'RUNNING') ? 'text-emerald-500' : 'text-amber-500'}>
+                <span className={page.monitors.every(m => m.status === 'RUNNING') ? 'text-emerald-600' : 'text-amber-600'}>
                     {page.monitors.every(m => m.status === 'RUNNING') ? 'Operational' : 'Partial Issues'}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest opacity-60">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
                 <span className="text-muted-foreground">Created</span>
                 <span className="text-muted-foreground/80">{formatDateDifference(page.createdAt)}</span>
               </div>
             </div>
-          </CardContent>
-          <CardFooter className="pt-4 border-t bg-muted/20 flex gap-2">
-            <Button size="sm" variant="ghost" className="h-9 text-[10px] font-black uppercase tracking-widest flex-1 bg-background hover:bg-primary/5 hover:text-primary transition-all" asChild>
+          </div>
+          
+          <div className="p-4 border-t border-border/80 bg-muted/20 flex gap-2">
+            <Button size="sm" variant="outline" className="h-8 text-[10px] font-bold uppercase tracking-wider flex-grow bg-background hover:bg-muted/40 transition-colors" asChild>
               <a href={`/statuspage/${page.id}`}>
                 Manage
               </a>
             </Button>
-            <Button size="sm" variant="ghost" className="h-9 text-[10px] font-black uppercase tracking-widest flex-1 bg-background hover:bg-primary/5 hover:text-primary transition-all" asChild>
+            <Button size="sm" variant="outline" className="h-8 text-[10px] font-bold uppercase tracking-wider flex-grow bg-background hover:bg-muted/40 transition-colors" asChild>
               <a
                 href={`/s/${page.subdomain}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <ExternalLink className="size-3 mr-1.5" />
-                View
+                View Page
               </a>
             </Button>
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-9 w-9 p-0 text-rose-500 hover:text-white hover:bg-rose-500 bg-background transition-all">
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-rose-500 hover:text-white hover:bg-rose-500 hover:border-rose-600 transition-all">
                   <Trash2 className="size-3.5" />
                 </Button>
               </AlertDialogTrigger>
@@ -185,12 +191,11 @@ const StatusPageList = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
+  );
+};
 
-  )
-}
-
-export default StatusPageList
+export default StatusPageList;

@@ -218,31 +218,30 @@ export default function TeamPage() {
                 {teamData?.ownedTeam && (
                     <div className="space-y-6">
                         {/* Members Section */}
-                        <Card className="shadow-none border">
-                            <CardHeader className="pb-4">
-                                <div className="flex justify-between items-center">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                            <Shield className="w-4 h-4 text-primary" />
-                                            Your Team Members
-                                        </CardTitle>
-                                        <CardDescription className="text-xs">Invite colleagues and manage their roles.</CardDescription>
-                                    </div>
-                                    <Badge variant="secondary" className="text-[10px]">
-                                        {teamData.ownedTeam.members.length} / {user?.plan === 'PRO' ? 20 : 50} Members
-                                    </Badge>
+                        <div className="border border-border bg-card rounded-lg overflow-hidden flex flex-col">
+                            <div className="p-5 border-b border-border/80 bg-muted/20 flex justify-between items-center">
+                                <div className="space-y-1">
+                                    <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                                        <Shield className="w-4 h-4 text-muted-foreground" />
+                                        Your Team Members
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground">Invite colleagues and manage their roles.</p>
                                 </div>
-                            </CardHeader>
-                            <CardContent>
+                                <Badge variant="secondary" className="text-[10px] bg-muted border font-bold uppercase tracking-wider rounded-md h-5">
+                                    {teamData.ownedTeam.members.length} / {user?.plan === 'PRO' ? 20 : 50} Members
+                                </Badge>
+                            </div>
+                            
+                            <div className="p-5 space-y-6">
                                 {/* Invite Form */}
-                                <form onSubmit={handleInvite} className="flex gap-3 mb-6">
+                                <form onSubmit={handleInvite} className="flex gap-3">
                                     <Input
                                         type="email"
                                         placeholder="Colleague's email address"
                                         required
                                         value={inviteEmail}
                                         onChange={e => setInviteEmail(e.target.value)}
-                                        className="h-10 text-sm flex-1"
+                                        className="h-10 text-sm flex-grow"
                                     />
                                     <Select value={inviteRole} onValueChange={setInviteRole}>
                                         <SelectTrigger className="w-[140px] h-10 text-sm">
@@ -264,17 +263,17 @@ export default function TeamPage() {
                                 </form>
 
                                 {/* Member List */}
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2 mb-2">Active Members</div>
+                                <div className="space-y-2.5">
+                                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Active Members</div>
                                     {teamData.ownedTeam.members.map((member: any) => (
-                                        <div key={member.id} className="flex items-center justify-between p-3 rounded-md bg-muted/30 border border-transparent hover:border-border transition-colors">
+                                        <div key={member.id} className="flex items-center justify-between p-3.5 rounded-lg border border-border bg-muted/10 hover:border-border/80 transition-colors">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded bg-muted flex items-center justify-center font-bold text-muted-foreground text-xs uppercase">
+                                                <div className="w-8 h-8 rounded-md bg-muted border flex items-center justify-center font-bold text-muted-foreground text-xs uppercase">
                                                     {member.user.username.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="font-semibold text-sm leading-none">{member.user.username}</div>
-                                                    <div className="text-xs text-muted-foreground mt-1">{member.user.email}</div>
+                                                    <div className="font-semibold text-sm leading-none text-foreground">{member.user.username}</div>
+                                                    <div className="text-xs text-muted-foreground mt-1.5">{member.user.email}</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
@@ -288,10 +287,10 @@ export default function TeamPage() {
                                                     </SelectContent>
                                                 </Select>
                                                 <Button
-                                                    variant="ghost"
+                                                    variant="outline"
                                                     size="icon"
                                                     onClick={() => handleRemove(member.id)}
-                                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    className="h-8 w-8 text-rose-500 hover:text-white hover:bg-rose-500 hover:border-rose-600 transition-colors"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
@@ -299,46 +298,44 @@ export default function TeamPage() {
                                         </div>
                                     ))}
                                     {teamData.ownedTeam.members.length === 0 && (
-                                        <div className="text-center py-6 text-sm text-muted-foreground font-medium bg-muted/20 rounded-md border border-dashed">
+                                        <div className="text-center py-8 text-xs text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
                                             No members in your team yet.
                                         </div>
                                     )}
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
 
                         {/* Monitor Sharing Section */}
-                        <Card className="shadow-none border">
-                            <CardHeader className="pb-4">
-                                <div className="space-y-1">
-                                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                        <MonitorIcon className="w-4 h-4 text-primary" />
-                                        Shared Monitors
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">Select which monitors you want to share with your team members.</CardDescription>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
+                        <div className="border border-border bg-card rounded-lg overflow-hidden flex flex-col">
+                            <div className="p-5 border-b border-border/80 bg-muted/20">
+                                <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                                    <MonitorIcon className="w-4 h-4 text-muted-foreground" />
+                                    Shared Monitors
+                                </h3>
+                                <p className="text-xs text-muted-foreground mt-1">Select which monitors you want to share with your team members.</p>
+                            </div>
+                            <div className="p-5">
                                 {monitors.length === 0 ? (
-                                    <div className="text-center py-6 text-sm text-muted-foreground font-medium bg-muted/20 rounded-md border border-dashed">
+                                    <div className="text-center py-8 text-xs text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
                                         You don't have any monitors to share. <a href="/monitors/create" className="text-primary hover:underline">Create one</a>.
                                     </div>
                                 ) : (
-                                    <div className="grid gap-2 sm:grid-cols-2">
+                                    <div className="grid gap-3 sm:grid-cols-2">
                                         {monitors.map(monitor => {
                                             const isShared = teamData.ownedTeam.monitors.some((m: any) => m.monitorId === monitor.id);
                                             return (
                                                 <label
                                                     key={monitor.id}
-                                                    className={`flex items-center justify-between p-3 rounded-md cursor-pointer transition-all border ${isShared ? 'bg-primary/5 border-primary/30 ring-1 ring-primary/10' : 'bg-muted/30 border-transparent hover:border-border'}`}
+                                                    className={`flex items-center justify-between p-3.5 rounded-lg cursor-pointer transition-all border ${isShared ? 'bg-emerald-500/[0.03] border-emerald-500/30' : 'bg-muted/10 border-border hover:border-border/80'}`}
                                                 >
                                                     <div className="flex items-center gap-3 overflow-hidden">
-                                                        <div className={`w-8 h-8 rounded shrink-0 flex items-center justify-center ${isShared ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                                                        <div className={`w-8 h-8 rounded-md border shrink-0 flex items-center justify-center ${isShared ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground'}`}>
                                                             <Globe className="w-4 h-4" />
                                                         </div>
                                                         <div className="overflow-hidden">
-                                                            <div className="font-semibold text-sm truncate leading-none">{monitor.name || monitor.url}</div>
-                                                            <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5">{monitor.url ? 'HTTP' : 'TCP'}</div>
+                                                            <div className="font-semibold text-sm truncate leading-none text-foreground">{monitor.name || monitor.url}</div>
+                                                            <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-2">{monitor.type || 'HTTP'}</div>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2 pl-3">
@@ -349,8 +346,8 @@ export default function TeamPage() {
                                                             className="sr-only"
                                                         />
                                                         {isShared ? (
-                                                            <div className="w-4 h-4 rounded bg-primary flex items-center justify-center shrink-0">
-                                                                <Check className="w-3 h-3 text-primary-foreground" />
+                                                            <div className="w-4 h-4 rounded bg-emerald-600 flex items-center justify-center shrink-0">
+                                                                <Check className="w-3 h-3 text-white" />
                                                             </div>
                                                         ) : (
                                                             <div className="w-4 h-4 rounded border border-input shrink-0 bg-background" />
@@ -361,8 +358,8 @@ export default function TeamPage() {
                                         })}
                                     </div>
                                 )}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </div>
                 )}
 

@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
+import { getFriendlyErrorMessage } from '@/lib/errors';
 import {
   Radio,
   ExternalLink,
@@ -112,7 +113,10 @@ export default function StatusPageManage() {
         fetch('/api/monitors')
       ]);
 
-      if (!res.ok) throw new Error('Failed to load status page');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw { message: errorData.error || 'Failed to load status page', status: res.status };
+      }
       const json = await res.json();
       setData(json);
       setEditTitle(json.title);
@@ -130,7 +134,7 @@ export default function StatusPageManage() {
         checkAuth();
       }
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Error', description: getFriendlyErrorMessage(err, 'Failed to load status page') });
     } finally {
       setLoading(false);
     }
@@ -154,13 +158,13 @@ export default function StatusPageManage() {
         })
       });
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update');
+        const errorData = await res.json().catch(() => ({}));
+        throw { message: errorData.error || 'Failed to update settings', status: res.status };
       }
       toast({ title: 'Success', description: 'Settings updated' });
       fetchData();
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Error', description: getFriendlyErrorMessage(err, 'Failed to update settings') });
     } finally {
       setIsUpdating(false);
     }
@@ -185,14 +189,17 @@ export default function StatusPageManage() {
           message: incMessage
         })
       });
-      if (!res.ok) throw new Error('Failed to create incident');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw { message: errorData.error || 'Failed to create incident', status: res.status };
+      }
       toast({ title: 'Success', description: 'Incident created' });
       setIncDialogOpen(false);
       setIncTitle('');
       setIncMessage('');
       fetchData();
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Error', description: getFriendlyErrorMessage(err, 'Failed to create incident') });
     } finally {
       setIsIncSubmitting(false);
     }

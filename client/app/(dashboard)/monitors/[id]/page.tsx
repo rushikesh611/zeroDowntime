@@ -34,10 +34,15 @@ const MonitorDetailsPage = () => {
             if (monitor) setMonitor(monitor)
         }).finally(() => setIsMonitorLoading(false))
 
+        let isMounted = true;
+        const abortController = new AbortController();
+
         const fetchData = async () => {
             try {
-                const monitorLogs = await fetchWithAuth("/api/monitors/" + id + "/logs?aggregate=true&interval=15")
-                if (monitorLogs.ok) {
+                const monitorLogs = await fetchWithAuth("/api/monitors/" + id + "/logs?aggregate=true&interval=15", {
+                    signal: abortController.signal
+                })
+                if (monitorLogs.ok && isMounted) {
                     if (monitorLogs.status === 204) {
                         setMonitorLogs([])
                     } else {
@@ -45,31 +50,43 @@ const MonitorDetailsPage = () => {
                         setMonitorLogs(result)
                     }
                 }
-            } catch (error) {
-                console.error("Error fetching data:", error)
+            } catch (error: any) {
+                if (error.name !== 'AbortError') {
+                    console.error("Error fetching data:", error)
+                }
             }
         }
 
         const fetchStats = async () => {
             try {
-                const response = await fetchWithAuth(`/api/monitors/${id}/stats`)
-                if (response.ok) {
+                const response = await fetchWithAuth(`/api/monitors/${id}/stats`, {
+                    signal: abortController.signal
+                })
+                if (response.ok && isMounted) {
                     const result = await response.json()
                     setStats(result)
                 }
-            } catch (error) {
-                console.error("Error fetching stats:", error)
+            } catch (error: any) {
+                if (error.name !== 'AbortError') {
+                    console.error("Error fetching stats:", error)
+                }
             }
         }
 
-        Promise.all([fetchData(), fetchStats()]).finally(() => setIsChartsLoading(false))
+        Promise.all([fetchData(), fetchStats()]).finally(() => {
+            if (isMounted) setIsChartsLoading(false)
+        })
 
         const intervalId = setInterval(() => {
             fetchData()
             fetchStats()
         }, 30000)
 
-        return () => clearInterval(intervalId)
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+            abortController.abort();
+        }
     }, [id, fetchMonitorById])
 
     const handleConfigure = (monitorId: string) => router.push(`/monitors/${monitorId}/update`)
@@ -152,10 +169,10 @@ const MonitorDetailsPage = () => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <h1 className="text-2xl font-semibold tracking-tight truncate">
-                                        {monitor?.name || monitor?.url || `${monitor?.host}:${monitor?.port}`}
+                                        {monitor?.name || monitor?.url || (monitor?.port ? `${monitor?.host}:${monitor?.port}` : monitor?.host)}
                                     </h1>
                                     <p className="text-sm text-muted-foreground truncate font-mono mt-0.5">
-                                        {monitor?.url || `${monitor?.host}:${monitor?.port}`}
+                                        {monitor?.url || (monitor?.port ? `${monitor?.host}:${monitor?.port}` : monitor?.host)}
                                     </p>
                                     <div className="flex items-center gap-3 mt-3">
                                         <Badge variant={isRunning ? "secondary" : "outline"} className={`text-[10px] uppercase font-bold tracking-wider rounded-md h-5 ${isRunning ? 'bg-green-500/10 text-green-700 border-green-500/20' : ''}`}>
@@ -163,7 +180,7 @@ const MonitorDetailsPage = () => {
                                             {monitor?.status || 'UNKNOWN'}
                                         </Badge>
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider rounded-md h-5">
-                                            {monitor?.url ? 'HTTP' : 'TCP'}
+                                            {monitor?.monitorType ? monitor.monitorType.toUpperCase() : (monitor?.url ? 'HTTP' : 'TCP')}
                                         </Badge>
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                                             <Clock className="h-3.5 w-3.5" />

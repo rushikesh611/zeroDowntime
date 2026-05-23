@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
+import { getFriendlyErrorMessage } from '@/lib/errors';
 import { 
   ShieldAlert, 
   MessageSquare, 
@@ -86,14 +87,17 @@ export default function IncidentDetail() {
   const fetchData = async () => {
     try {
       const res = await fetch(`/api/incidents/${id}`);
-      if (!res.ok) throw new Error('Failed to load incident');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw { message: data.error || 'Failed to load incident', status: res.status };
+      }
       const json = await res.json();
       setIncident(json);
       setUpdateStatus(json.status);
       setUpdateSeverity(json.severity);
       setPostMortem(json.postMortem || '');
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Error', description: getFriendlyErrorMessage(err, 'Failed to load incident') });
     } finally {
       setLoading(false);
     }
@@ -120,12 +124,15 @@ export default function IncidentDetail() {
             severity: updateSeverity
         })
       });
-      if (!res.ok) throw new Error('Failed to post update');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw { message: data.error || 'Failed to post update', status: res.status };
+      }
       toast({ title: 'Update posted' });
       setUpdateMessage('');
       fetchData();
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Error', description: getFriendlyErrorMessage(err, 'Failed to post update') });
     } finally {
       setIsUpdating(false);
     }
@@ -139,11 +146,14 @@ export default function IncidentDetail() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postMortem })
       });
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw { message: data.error || 'Failed to save', status: res.status };
+      }
       toast({ title: 'Post-mortem saved' });
       fetchData();
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Error', description: getFriendlyErrorMessage(err, 'Failed to save post-mortem') });
     } finally {
       setIsSavingPM(false);
     }
@@ -152,11 +162,14 @@ export default function IncidentDetail() {
   const handleDelete = async () => {
     try {
       const res = await fetch(`/api/incidents/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw { message: data.error || 'Failed to delete incident', status: res.status };
+      }
       router.push('/incidents');
       toast({ title: 'Incident deleted' });
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+      toast({ variant: 'destructive', title: 'Error', description: getFriendlyErrorMessage(err, 'Failed to delete incident') });
     }
   };
 

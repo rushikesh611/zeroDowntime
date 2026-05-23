@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { getFriendlyErrorMessage } from '@/lib/errors';
 import { Monitor } from '@/types';
 import { Plus, TowerControl, Radio } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
@@ -43,29 +44,33 @@ const StatusPage = () => {
     ? new URL(process.env.NEXT_PUBLIC_CLIENT_URL).host
     : 'beacn.online';
 
-  const fetchMonitors = async () => {
+  const fetchMonitors = async (signal?: AbortSignal) => {
     try {
-      const monRes = await fetch('/api/monitors');
+      const monRes = await fetch('/api/monitors?status=RUNNING', { signal });
       if (monRes.ok) {
         if (monRes.status === 204) {
           setMonitors([]);
         } else {
           const data = await monRes.json();
-          setMonitors(data.filter((monitor: Monitor) => monitor.status === 'RUNNING'));
+          setMonitors(data);
         }
       }
-    } catch (error) {
-      console.error('Error fetching monitors:', error);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching monitors:', error);
+      }
     } finally {
       setIsLoadingMonitors(false);
     }
   };
 
   useEffect(() => {
-    fetchMonitors();
+    const abortController = new AbortController();
+    fetchMonitors(abortController.signal);
     if (!user) {
-        checkAuth();
+      checkAuth();
     }
+    return () => abortController.abort();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -93,7 +98,9 @@ const StatusPage = () => {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to create status page');
+      if (!response.ok) {
+        throw { message: data.error || 'Failed to create status page', status: response.status };
+      }
 
       toast({
         title: 'Success',
@@ -118,7 +125,7 @@ const StatusPage = () => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message,
+        description: getFriendlyErrorMessage(error, 'Failed to create status page'),
       });
     } finally {
       setIsSubmitting(false);
