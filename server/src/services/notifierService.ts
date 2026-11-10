@@ -85,7 +85,11 @@ export async function sendTestNotification(userId: string, id: string) {
     return { success: true };
 }
 
-export async function sendAlert(notifierId: string, url: string, results: any[]) {
+export async function sendAlert(
+    notifierId: string,
+    url: string,
+    results: { region: string; isUp?: boolean }[]
+) {
     const notifier = await prisma.notifier.findUnique({
         where: { id: notifierId }
     });
@@ -101,11 +105,16 @@ export async function sendAlert(notifierId: string, url: string, results: any[])
     } else if (notifier.type === 'Webhook') {
         logger.info(`sendAlert: Sending alert webhook to ${notifier.details}`);
 
+        const regionsDown = [...new Set(results.filter(result => !result.isUp).map(result => result.region))];
+        const regionsMessage = regionsDown.length > 0
+            ? `down in ${regionsDown.join(', ')}`
+            : 'down in one or more regions';
         const payload = {
-            text: `🚨 *Alert*: ${url} is down!`,
+            text: `🚨 *Alert*: ${url} is ${regionsMessage}!`,
             event: "monitor_down",
             monitor: {
                 url,
+                regionsDown,
                 results
             },
             notifier: {
@@ -113,7 +122,7 @@ export async function sendAlert(notifierId: string, url: string, results: any[])
                 name: notifier.name
             },
             timestamp: new Date().toISOString(),
-            message: `The monitor for ${url} has reported a down state from one or more regions.`
+            message: `The monitor for ${url} is ${regionsMessage}.`
         };
 
         try {
@@ -129,4 +138,3 @@ export async function sendAlert(notifierId: string, url: string, results: any[])
         }
     }
 }
-

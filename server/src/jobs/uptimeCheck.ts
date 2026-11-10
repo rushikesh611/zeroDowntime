@@ -7,9 +7,10 @@ import prisma from '../lib/prisma.js'
 
 interface UptimeResult {
     region: string;
-    statusCode: number;
-    responseTime: number;
-    isUp: boolean;
+    statusCode?: number;
+    responseTime?: number;
+    isUp?: boolean;
+    error?: string;
 }
 
 interface CachedResult {
@@ -77,23 +78,30 @@ export function startUptimeCheck() {
                     const logData: Omit<MonitorLog, 'id'>[] = cache[monitor.id].results.flatMap(record =>
                         record.results.map(result => ({
                             monitorId: monitor.id,
-                            isUp: !record.isDown,
-                            statusCode: result.statusCode,
-                            responseTime: result.responseTime,
+                            isUp: result.isUp ?? false,
+                            statusCode: result.statusCode ?? 0,
+                            responseTime: result.responseTime ?? 0,
                             region: result.region,
                             lastCheckedAt: record.time,
                             headers: null,
                             responseBody: null,
-                            error: null
+                            error: result.error ?? null
                         }))
                     )
 
-                    await prisma.monitorLog.createMany({
-                        data: logData
-                    })
-                    logger.info(`Inserted ${logData.length} logs for monitor ${monitor.id}`)
+                    try {
+                        console.log(`[uptimeCheck] Flushing ${logData.length} logs from ${cache[monitor.id].results.length} checks for monitor ${monitor.id}`)
+                        await prisma.monitorLog.createMany({
+                            data: logData
+                        })
+                        console.log(`[uptimeCheck] Successfully flushed ${logData.length} logs for monitor ${monitor.id}`)
+                        logger.info(`Inserted ${logData.length} logs for monitor ${monitor.id}`)
 
-                    cache[monitor.id].results = []
+                        cache[monitor.id].results = []
+                    } catch (error) {
+                        console.error(`[uptimeCheck] Failed to flush logs for monitor ${monitor.id}:`, error)
+                        logger.error(`Failed to insert logs for monitor ${monitor.id}; retaining ${cache[monitor.id].results.length} cached checks`, error)
+                    }
                 }
             }
         }))
