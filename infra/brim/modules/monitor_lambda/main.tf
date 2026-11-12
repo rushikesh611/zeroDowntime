@@ -29,6 +29,7 @@ resource "aws_lambda_function" "zd-check-http-endpoint" {
   handler          = "index.handler"
   source_code_hash = var.source_code_hash
   runtime          = "nodejs24.x"
+  timeout          = 60
 
   environment {
     variables = {
