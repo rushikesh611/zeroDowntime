@@ -47,6 +47,7 @@ const formSchema = z.object({
   monitorType: z.enum(['http', 'tcp', 'dns', 'ssl', 'ping', 'graphql']),
   url: z.string().optional(),
   method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']),
+  body: z.string().optional(),
   headers: z.array(headerSchema),
   assertions: z.array(assertionSchema),
   tcpHost: z.string().optional(),
@@ -99,6 +100,7 @@ const Page = () => {
       monitorType: 'http',
       method: 'GET',
       url: '',
+      body: '',
       tcpHost: '',
       dnsRecordType: 'A',
       expectedIp: '',
@@ -127,6 +129,7 @@ const Page = () => {
         ...payload,
         method: data.method,
         url: data.url,
+        body: data.body,
         headers: data.headers.filter(h => h.key && h.value),
         assertions: data.assertions
       };
@@ -351,6 +354,28 @@ const Page = () => {
                               />
                             </FormControl>
                             <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    {monitorType === 'http' && (
+                      <FormField
+                        control={form.control}
+                        name="body"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-semibold">Request Body</FormLabel>
+                            <FormControl>
+                              <textarea
+                                placeholder='{"key":"value"}'
+                                className="w-full min-h-[100px] p-3 text-xs font-mono border rounded-md bg-muted/20 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-[10px]">
+                              Sent with POST, PUT, and PATCH requests.
+                            </FormDescription>
                           </FormItem>
                         )}
                       />
